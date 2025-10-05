@@ -1,0 +1,58 @@
+# Repository Settings
+# This file can be used with GitHub Apps like Probot Settings
+# to automate repository configuration management.
+# Reference: https://github.com/probot/settings
+
+# Repository settings
+repository:
+  # A short description of the repository
+  description: A professional WinForms trading chart application built with ScottPlot 5 and .NET 8
+
+  # Either `true` to make the repository private, or `false` to make it public
+  # private: false
+
+  # Either `true` to enable issues for this repository, `false` to disable them
+  has_issues: true
+
+  # Either `true` to enable projects for this repository, or `false` to disable them
+  has_projects: true
+
+  # Either `true` to enable the wiki for this repository, `false` to disable it
+  has_wiki: true
+
+  # Either `true` to enable downloads for this repository, `false` to disable them
+  has_downloads: true
+
+  # Either `true` to allow squash-merging pull requests, or `false` to prevent
+  allow_squash_merge: true
+
+  # Either `true` to allow merging pull requests with a merge commit, or `false` to prevent
+  allow_merge_commit: true
+
+  # Either `true` to allow rebase-merging pull requests, or `false` to prevent
+  allow_rebase_merge: true
+
+  # Either `true` to enable automatic deletion of branches on merge, or `false` to disable
+  delete_branch_on_merge: true
+
+# Labels: define labels for Issues and Pull Requests
+labels:
+  - name: bug
+    color: d73a4a
+    description: Something isn't working
+
+  - name: enhancement
+    color: a2eeef
+    description: New feature or request
+
+  - name: documentation
+    color: 0075ca
+    description: Improvements or additions to documentation
+
+  - name: maintenance
+    color: fbca04
+    description: Repository maintenance and upkeep
+
+  - name: repository administration
+    color: d4c5f9
+    description: Repository settings and configuration

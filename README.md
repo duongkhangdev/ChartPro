@@ -97,6 +97,13 @@ The project includes a GitHub Actions workflow (`.github/workflows/build-and-rel
 - Creates source code archives
 - Attaches artifacts to releases (on tag push)
 
+## Repository Configuration
+
+The repository is configured with best practices for maintenance and collaboration:
+- **Automatic Branch Deletion**: Enabled - head branches are automatically deleted after PR merge
+- **Settings as Code**: Repository settings are defined in `.github/settings.yml`
+- See [REPOSITORY_SETTINGS.md](REPOSITORY_SETTINGS.md) for complete configuration documentation
+
 ## TODO / Future Enhancements
 
 The following features are planned for future implementation:
