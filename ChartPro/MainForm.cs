@@ -54,7 +54,8 @@ public partial class MainForm : Form
         var btnVertical = CreateToolButton("Vertical Line", ChartDrawMode.VerticalLine, ref yPos);
         var btnRectangle = CreateToolButton("Rectangle", ChartDrawMode.Rectangle, ref yPos);
         var btnCircle = CreateToolButton("Circle", ChartDrawMode.Circle, ref yPos);
-        var btnFibonacci = CreateToolButton("Fibonacci", ChartDrawMode.FibonacciRetracement, ref yPos);
+        var btnFibonacci = CreateToolButton("Fib Retracement", ChartDrawMode.FibonacciRetracement, ref yPos);
+        var btnFibExtension = CreateToolButton("Fib Extension", ChartDrawMode.FibonacciExtension, ref yPos);
 
         yPos += 20;
         var btnGenerateSampleData = new Button
@@ -73,6 +74,7 @@ public partial class MainForm : Form
         toolbarPanel.Controls.Add(btnRectangle);
         toolbarPanel.Controls.Add(btnCircle);
         toolbarPanel.Controls.Add(btnFibonacci);
+        toolbarPanel.Controls.Add(btnFibExtension);
         toolbarPanel.Controls.Add(btnGenerateSampleData);
 
         Controls.Add(_formsPlot);

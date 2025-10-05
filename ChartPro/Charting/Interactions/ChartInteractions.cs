@@ -200,7 +200,8 @@ public class ChartInteractions : IChartInteractions
             ChartDrawMode.Rectangle => CreateRectanglePreview(start, end),
             ChartDrawMode.Circle => CreateCirclePreview(start, end),
             ChartDrawMode.FibonacciRetracement => CreateFibonacciPreview(start, end),
-            // TODO: Implement other draw modes (FibonacciExtension, Channel, Triangle, Text)
+            ChartDrawMode.FibonacciExtension => CreateFibonacciPreview(start, end),
+            // TODO: Implement other draw modes (Channel, Triangle, Text)
             _ => null
         };
 
@@ -235,7 +236,8 @@ public class ChartInteractions : IChartInteractions
             ChartDrawMode.Rectangle => CreateRectangle(start, end),
             ChartDrawMode.Circle => CreateCircle(start, end),
             ChartDrawMode.FibonacciRetracement => CreateFibonacci(start, end),
-            // TODO: Implement other draw modes
+            ChartDrawMode.FibonacciExtension => CreateFibonacci(start, end),
+            // TODO: Implement other draw modes (Channel, Triangle, Text)
             _ => null
         };
 
@@ -350,22 +352,20 @@ public class ChartInteractions : IChartInteractions
 
     private IPlottable CreateFibonacciPreview(Coordinates start, Coordinates end)
     {
-        // TODO: Implement full Fibonacci retracement with levels (0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0)
-        // For now, create a simple line as preview
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 1;
-        line.LineColor = Colors.Gold.WithAlpha(0.5);
-        return line;
+        var levels = _currentDrawMode == ChartDrawMode.FibonacciExtension
+            ? FibonacciLevel.GetDefaultExtensionLevels()
+            : FibonacciLevel.GetDefaultRetracementLevels();
+        
+        return new FibonacciTool(start, end, levels, isPreview: true);
     }
 
     private IPlottable CreateFibonacci(Coordinates start, Coordinates end)
     {
-        // TODO: Implement full Fibonacci retracement with levels and labels
-        // For now, create a simple line
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 2;
-        line.LineColor = Colors.Gold;
-        return line;
+        var levels = _currentDrawMode == ChartDrawMode.FibonacciExtension
+            ? FibonacciLevel.GetDefaultExtensionLevels()
+            : FibonacciLevel.GetDefaultRetracementLevels();
+        
+        return new FibonacciTool(start, end, levels, isPreview: false);
     }
 
     #endregion
