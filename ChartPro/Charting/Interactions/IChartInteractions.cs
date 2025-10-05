@@ -59,4 +59,16 @@ public interface IChartInteractions : IDisposable
     /// Gets whether the service is attached to a chart.
     /// </summary>
     bool IsAttached { get; }
+
+    /// <summary>
+    /// Saves all drawn shapes to a JSON file.
+    /// </summary>
+    /// <param name="filePath">The path to save the JSON file</param>
+    void SaveShapesToFile(string filePath);
+
+    /// <summary>
+    /// Loads shapes from a JSON file and adds them to the chart.
+    /// </summary>
+    /// <param name="filePath">The path to the JSON file to load</param>
+    void LoadShapesFromFile(string filePath);
 }

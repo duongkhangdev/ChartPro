@@ -12,6 +12,7 @@ A professional WinForms trading chart application built with ScottPlot 5 and .NE
   - Rectangles
   - Circles
   - Fibonacci retracement (with extensibility for additional tools)
+- **Shape Persistence**: Save and load drawn annotations as JSON files for later use or sharing
 - **Real-Time Updates**: Support for live candle updates via `BindCandles()`, `UpdateLastCandle()`, and `AddCandle()`
 - **Memory-Safe**: Proper event handler cleanup to prevent memory leaks
 - **ScottPlot 5 Integration**: Built on the latest ScottPlot 5 for high-performance charting
@@ -83,6 +84,44 @@ dotnet run --project ChartPro/ChartPro.csproj
 5. The drawing mode automatically resets to "None" after completing a shape
 6. Pan/zoom is disabled during drawing, enabled otherwise
 
+### Saving and Loading Annotations
+
+- **Save Annotations**: Click the "Save Annotations" button to export all drawn shapes to a JSON file
+- **Load Annotations**: Click the "Load Annotations" button to import and restore shapes from a previously saved JSON file
+- Annotations include all shape types, positions, colors, and styles
+- JSON files can be shared with others or used as backups of your technical analysis
+
+#### Annotation File Format
+
+The annotations are saved in a structured JSON format:
+
+```json
+{
+  "Version": 1,
+  "Shapes": [
+    {
+      "ShapeType": "TrendLine",
+      "X1": 10.5,
+      "Y1": 100.2,
+      "X2": 20.3,
+      "Y2": 105.6,
+      "LineColor": "#0000FF",
+      "LineWidth": 2,
+      "FillColor": null,
+      "FillAlpha": 25
+    }
+  ]
+}
+```
+
+Each shape stores:
+- **ShapeType**: Type of shape (TrendLine, Rectangle, Circle, etc.)
+- **X1, Y1, X2, Y2**: Coordinate points
+- **LineColor**: Color in hex format
+- **LineWidth**: Line thickness in pixels
+- **FillColor**: Fill color for shapes like rectangles and circles
+- **FillAlpha**: Transparency level (0-255)
+
 ## CI/CD
 
 The project includes a GitHub Actions workflow (`.github/workflows/build-and-release.yml`) that:
@@ -99,7 +138,6 @@ The following features are planned for future implementation:
 - Triangle drawing tool
 - Text annotation tool
 - Shape editing and deletion
-- Persistence of drawn shapes
 - Additional technical indicators
 
 ## License
