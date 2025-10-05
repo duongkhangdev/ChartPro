@@ -1,3 +1,5 @@
+using ChartPro.Charting.Commands;
+using ChartPro.Charting.Shapes;
 using ScottPlot;
 using ScottPlot.WinForms;
 using System.Drawing;
@@ -21,8 +23,17 @@ public class ChartInteractions : IChartInteractions
     private Coordinates? _drawStartCoordinates;
     private IPlottable? _previewPlottable;
 
+    // Shape management
+    private readonly IShapeManager _shapeManager;
+
     public ChartDrawMode CurrentDrawMode => _currentDrawMode;
     public bool IsAttached => _isAttached;
+    public IShapeManager ShapeManager => _shapeManager;
+
+    public ChartInteractions()
+    {
+        _shapeManager = new ShapeManager();
+    }
 
     /// <summary>
     /// Attaches the interaction service to a FormsPlot control.
@@ -241,7 +252,10 @@ public class ChartInteractions : IChartInteractions
 
         if (plottable != null)
         {
-            _formsPlot.Plot.Add.Plottable(plottable);
+            // Create a DrawnShape and add it via command pattern
+            var shape = new DrawnShape(plottable, _currentDrawMode);
+            var command = new AddShapeCommand(_shapeManager, shape, _formsPlot.Plot);
+            _shapeManager.ExecuteCommand(command);
             _formsPlot.Refresh();
         }
     }
@@ -366,6 +380,49 @@ public class ChartInteractions : IChartInteractions
         line.LineWidth = 2;
         line.LineColor = Colors.Gold;
         return line;
+    }
+
+    #endregion
+
+    #region Undo/Redo/Delete Operations
+
+    public bool Undo()
+    {
+        if (!_shapeManager.CanUndo)
+            return false;
+
+        var result = _shapeManager.Undo();
+        _formsPlot?.Refresh();
+        return result;
+    }
+
+    public bool Redo()
+    {
+        if (!_shapeManager.CanRedo)
+            return false;
+
+        var result = _shapeManager.Redo();
+        _formsPlot?.Refresh();
+        return result;
+    }
+
+    public void DeleteSelectedShapes()
+    {
+        if (_formsPlot == null)
+            return;
+
+        var selectedShapes = _shapeManager.Shapes.Where(s => s.IsSelected).ToList();
+        
+        foreach (var shape in selectedShapes)
+        {
+            var command = new DeleteShapeCommand(_shapeManager, shape, _formsPlot.Plot);
+            _shapeManager.ExecuteCommand(command);
+        }
+
+        if (selectedShapes.Any())
+        {
+            _formsPlot.Refresh();
+        }
     }
 
     #endregion

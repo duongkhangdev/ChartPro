@@ -27,6 +27,7 @@ public partial class MainForm : Form
         ClientSize = new Size(1200, 700);
         Name = "MainForm";
         Text = "ChartPro - Trading Chart with ScottPlot 5";
+        KeyPreview = true; // Enable form to receive key events before controls
 
         // Create FormsPlot control
         _formsPlot = new FormsPlot
@@ -80,8 +81,46 @@ public partial class MainForm : Form
 
         Load += MainForm_Load;
         FormClosing += MainForm_FormClosing;
+        KeyDown += MainForm_KeyDown;
 
         ResumeLayout(false);
+    }
+
+    private void MainForm_KeyDown(object? sender, KeyEventArgs e)
+    {
+        // Ctrl+Z - Undo
+        if (e.Control && e.KeyCode == Keys.Z && !e.Shift)
+        {
+            if (_chartInteractions.Undo())
+            {
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+        }
+        // Ctrl+Y or Ctrl+Shift+Z - Redo
+        else if ((e.Control && e.KeyCode == Keys.Y) || (e.Control && e.Shift && e.KeyCode == Keys.Z))
+        {
+            if (_chartInteractions.Redo())
+            {
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+            }
+        }
+        // Delete - Delete selected shapes
+        else if (e.KeyCode == Keys.Delete)
+        {
+            _chartInteractions.DeleteSelectedShapes();
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+        }
+        // Escape - Cancel drawing mode
+        else if (e.KeyCode == Keys.Escape)
+        {
+            _chartInteractions.SetDrawMode(ChartDrawMode.None);
+            UpdateButtonStyles(null!);
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+        }
     }
 
     private Button CreateToolButton(string text, ChartDrawMode mode, ref int yPos)

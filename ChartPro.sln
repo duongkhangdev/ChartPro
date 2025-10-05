@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChartPro", "ChartPro\ChartPro.csproj", "{BEFCC0EB-132E-44FF-9507-AA36BD3A638E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChartPro.Tests", "ChartPro.Tests\ChartPro.Tests.csproj", "{D4340A50-B25D-41EF-BCCB-91AEFA03CD9D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,18 @@ Global
 		{BEFCC0EB-132E-44FF-9507-AA36BD3A638E}.Release|x64.Build.0 = Release|Any CPU
 		{BEFCC0EB-132E-44FF-9507-AA36BD3A638E}.Release|x86.ActiveCfg = Release|Any CPU
 		{BEFCC0EB-132E-44FF-9507-AA36BD3A638E}.Release|x86.Build.0 = Release|Any CPU
+		{D4340A50-B25D-41EF-BCCB-91AEFA03CD9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4340A50-B25D-41EF-BCCB-91AEFA03CD9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4340A50-B25D-41EF-BCCB-91AEFA03CD9D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D4340A50-B25D-41EF-BCCB-91AEFA03CD9D}.Debug|x64.Build.0 = Debug|Any CPU
+		{D4340A50-B25D-41EF-BCCB-91AEFA03CD9D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D4340A50-B25D-41EF-BCCB-91AEFA03CD9D}.Debug|x86.Build.0 = Debug|Any CPU
+		{D4340A50-B25D-41EF-BCCB-91AEFA03CD9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4340A50-B25D-41EF-BCCB-91AEFA03CD9D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4340A50-B25D-41EF-BCCB-91AEFA03CD9D}.Release|x64.ActiveCfg = Release|Any CPU
+		{D4340A50-B25D-41EF-BCCB-91AEFA03CD9D}.Release|x64.Build.0 = Release|Any CPU
+		{D4340A50-B25D-41EF-BCCB-91AEFA03CD9D}.Release|x86.ActiveCfg = Release|Any CPU
+		{D4340A50-B25D-41EF-BCCB-91AEFA03CD9D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
