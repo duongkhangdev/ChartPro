@@ -1,4 +1,5 @@
 using ChartPro.Charting.Interactions;
+using ChartPro.Charting.ShapeManagement;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -18,6 +19,9 @@ static class Program
         var host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
+                // Register the shape manager service
+                services.AddTransient<IShapeManager, ShapeManager>();
+
                 // Register the chart interactions service
                 services.AddTransient<IChartInteractions, ChartInteractions>();
 

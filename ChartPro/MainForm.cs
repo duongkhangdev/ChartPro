@@ -27,6 +27,7 @@ public partial class MainForm : Form
         ClientSize = new Size(1200, 700);
         Name = "MainForm";
         Text = "ChartPro - Trading Chart with ScottPlot 5";
+        KeyPreview = true; // Enable keyboard shortcuts
 
         // Create FormsPlot control
         _formsPlot = new FormsPlot
@@ -80,6 +81,7 @@ public partial class MainForm : Form
 
         Load += MainForm_Load;
         FormClosing += MainForm_FormClosing;
+        KeyDown += MainForm_KeyDown;
 
         ResumeLayout(false);
     }
@@ -147,6 +149,26 @@ public partial class MainForm : Form
     {
         // Dispose the chart interactions service to unhook event handlers
         _chartInteractions.Dispose();
+    }
+
+    private void MainForm_KeyDown(object? sender, KeyEventArgs e)
+    {
+        // Undo: Ctrl+Z
+        if (e.Control && e.KeyCode == Keys.Z)
+        {
+            if (_chartInteractions.ShapeManager.Undo())
+            {
+                e.Handled = true;
+            }
+        }
+        // Redo: Ctrl+Y
+        else if (e.Control && e.KeyCode == Keys.Y)
+        {
+            if (_chartInteractions.ShapeManager.Redo())
+            {
+                e.Handled = true;
+            }
+        }
     }
 
     private void GenerateSampleData()
