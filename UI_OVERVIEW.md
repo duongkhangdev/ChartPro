@@ -79,6 +79,12 @@ The ChartPro application features a clean, professional interface designed for t
 6. **Circle** - Draw circular/elliptical shapes
 7. **Fibonacci** - Draw Fibonacci retracement
 
+**Snap/Magnet Controls**:
+- **Enable Snap (or hold Shift)** - Checkbox to enable snap functionality
+- **No Snap** - Radio button for no snapping (default)
+- **Snap to Price Grid** - Radio button to snap to rounded price levels
+- **Snap to Candle OHLC** - Radio button to snap to nearest candle's OHLC values
+
 **Special Button**:
 - **Generate Sample Data** - Creates 100 random OHLC candles
 
@@ -162,7 +168,10 @@ The ChartPro application features a clean, professional interface designed for t
 
 ## Keyboard Shortcuts
 
-Currently not implemented, but could be added:
+**Implemented**:
+- `Shift` (hold) - Temporarily enable snap/magnet while drawing
+
+**Not yet implemented**:
 - `Esc` - Cancel drawing, return to None mode
 - `Delete` - Remove selected shape
 - `Ctrl+Z` - Undo last shape
@@ -193,12 +202,13 @@ _chartInteractions.AddCandle(newCandle);
 **Current State**:
 - Standard Windows Forms controls (accessible by default)
 - Keyboard navigation between toolbar buttons (Tab key)
+- Shift key for temporary snap enable
 - ToolTips could be added for better UX
 
 **Improvements Possible**:
 - Add ToolTips to buttons
-- Add keyboard shortcuts
-- Add status bar showing current mode
+- Add more keyboard shortcuts
+- Add status bar showing current mode and snap state
 - Add coordinate display on mouse hover
 
 ## Performance

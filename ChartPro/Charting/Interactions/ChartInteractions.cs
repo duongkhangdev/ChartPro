@@ -21,8 +21,23 @@ public class ChartInteractions : IChartInteractions
     private Coordinates? _drawStartCoordinates;
     private IPlottable? _previewPlottable;
 
+    // Snap/magnet state
+    private bool _snapEnabled = false;
+    private SnapMode _snapMode = SnapMode.None;
+    private bool _shiftKeyPressed = false;
+
     public ChartDrawMode CurrentDrawMode => _currentDrawMode;
     public bool IsAttached => _isAttached;
+    public bool SnapEnabled 
+    { 
+        get => _snapEnabled; 
+        set => _snapEnabled = value; 
+    }
+    public SnapMode SnapMode 
+    { 
+        get => _snapMode; 
+        set => _snapMode = value; 
+    }
 
     /// <summary>
     /// Attaches the interaction service to a FormsPlot control.
@@ -41,6 +56,8 @@ public class ChartInteractions : IChartInteractions
         _formsPlot.MouseDown += OnMouseDown;
         _formsPlot.MouseMove += OnMouseMove;
         _formsPlot.MouseUp += OnMouseUp;
+        _formsPlot.KeyDown += OnKeyDown;
+        _formsPlot.KeyUp += OnKeyUp;
 
         _isAttached = true;
     }
@@ -128,7 +145,23 @@ public class ChartInteractions : IChartInteractions
         _formsPlot?.Refresh();
     }
 
-    #region Mouse Event Handlers
+    #region Event Handlers
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode == Keys.ShiftKey)
+        {
+            _shiftKeyPressed = true;
+        }
+    }
+
+    private void OnKeyUp(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode == Keys.ShiftKey)
+        {
+            _shiftKeyPressed = false;
+        }
+    }
 
     private void OnMouseDown(object? sender, MouseEventArgs e)
     {
@@ -137,8 +170,9 @@ public class ChartInteractions : IChartInteractions
 
         if (e.Button == MouseButtons.Left)
         {
-            // Store the starting coordinates
-            _drawStartCoordinates = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
+            // Store the starting coordinates with snap applied
+            var coords = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
+            _drawStartCoordinates = ApplySnap(coords);
         }
     }
 
@@ -150,8 +184,9 @@ public class ChartInteractions : IChartInteractions
         if (_drawStartCoordinates == null)
             return;
 
-        // Get current mouse coordinates
+        // Get current mouse coordinates with snap applied
         var currentCoordinates = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
+        currentCoordinates = ApplySnap(currentCoordinates);
 
         // Update preview
         UpdatePreview(_drawStartCoordinates.Value, currentCoordinates);
@@ -164,8 +199,9 @@ public class ChartInteractions : IChartInteractions
 
         if (e.Button == MouseButtons.Left && _drawStartCoordinates != null)
         {
-            // Get final coordinates
+            // Get final coordinates with snap applied
             var endCoordinates = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
+            endCoordinates = ApplySnap(endCoordinates);
 
             // Finalize the shape
             FinalizeShape(_drawStartCoordinates.Value, endCoordinates);
@@ -177,6 +213,129 @@ public class ChartInteractions : IChartInteractions
             // Reset draw mode to None after completing a shape
             SetDrawMode(ChartDrawMode.None);
         }
+    }
+
+    #endregion
+
+    #region Snap Logic
+
+    /// <summary>
+    /// Applies snap logic to the given coordinates based on snap mode and Shift key state.
+    /// </summary>
+    private Coordinates ApplySnap(Coordinates coords)
+    {
+        // Check if snap is enabled (either via property or Shift key)
+        bool shouldSnap = _snapEnabled || _shiftKeyPressed;
+        
+        if (!shouldSnap || _snapMode == SnapMode.None)
+            return coords;
+
+        return _snapMode switch
+        {
+            SnapMode.Price => SnapToPrice(coords),
+            SnapMode.CandleOHLC => SnapToCandleOHLC(coords),
+            _ => coords
+        };
+    }
+
+    /// <summary>
+    /// Snaps coordinates to rounded price levels.
+    /// </summary>
+    private Coordinates SnapToPrice(Coordinates coords)
+    {
+        if (_formsPlot == null)
+            return coords;
+
+        // Get the current price range visible on the chart
+        var yAxis = _formsPlot.Plot.Axes.Left;
+        var yRange = yAxis.Max - yAxis.Min;
+
+        // Determine appropriate grid spacing based on visible range
+        double gridSize = CalculatePriceGridSize(yRange);
+
+        // Snap Y coordinate to nearest grid line
+        double snappedY = Math.Round(coords.Y / gridSize) * gridSize;
+
+        // For time axis, snap to visible candle positions if available
+        double snappedX = coords.X;
+        if (_boundCandles != null && _boundCandles.Count > 0)
+        {
+            snappedX = SnapToNearestCandleTime(coords.X);
+        }
+
+        return new Coordinates(snappedX, snappedY);
+    }
+
+    /// <summary>
+    /// Calculates appropriate price grid size based on visible range.
+    /// </summary>
+    private double CalculatePriceGridSize(double range)
+    {
+        // Use logarithmic scale for grid sizing
+        double magnitude = Math.Pow(10, Math.Floor(Math.Log10(range)));
+        double normalized = range / magnitude;
+
+        if (normalized < 2)
+            return magnitude * 0.2;
+        else if (normalized < 5)
+            return magnitude * 0.5;
+        else
+            return magnitude;
+    }
+
+    /// <summary>
+    /// Snaps coordinates to the nearest candle's OHLC values.
+    /// </summary>
+    private Coordinates SnapToCandleOHLC(Coordinates coords)
+    {
+        if (_boundCandles == null || _boundCandles.Count == 0)
+            return coords;
+
+        // Find the nearest candle by time (X coordinate)
+        var nearestCandle = FindNearestCandle(coords.X);
+        if (nearestCandle == null)
+            return coords;
+
+        // Find the closest OHLC value to the Y coordinate
+        double[] ohlcValues = new[] 
+        { 
+            nearestCandle.Value.Open, 
+            nearestCandle.Value.High, 
+            nearestCandle.Value.Low, 
+            nearestCandle.Value.Close 
+        };
+
+        double closestPrice = ohlcValues
+            .OrderBy(price => Math.Abs(price - coords.Y))
+            .First();
+
+        double snappedX = nearestCandle.Value.DateTime.ToOADate();
+
+        return new Coordinates(snappedX, closestPrice);
+    }
+
+    /// <summary>
+    /// Finds the nearest candle to the given X coordinate (time).
+    /// </summary>
+    private OHLC? FindNearestCandle(double x)
+    {
+        if (_boundCandles == null || _boundCandles.Count == 0)
+            return null;
+
+        var targetTime = DateTime.FromOADate(x);
+        
+        return _boundCandles
+            .OrderBy(candle => Math.Abs((candle.DateTime - targetTime).TotalSeconds))
+            .FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Snaps X coordinate to the nearest candle time.
+    /// </summary>
+    private double SnapToNearestCandleTime(double x)
+    {
+        var nearestCandle = FindNearestCandle(x);
+        return nearestCandle?.DateTime.ToOADate() ?? x;
     }
 
     #endregion
@@ -391,6 +550,8 @@ public class ChartInteractions : IChartInteractions
                 _formsPlot.MouseDown -= OnMouseDown;
                 _formsPlot.MouseMove -= OnMouseMove;
                 _formsPlot.MouseUp -= OnMouseUp;
+                _formsPlot.KeyDown -= OnKeyDown;
+                _formsPlot.KeyUp -= OnKeyUp;
             }
 
             _formsPlot = null;

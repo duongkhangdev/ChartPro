@@ -59,4 +59,14 @@ public interface IChartInteractions : IDisposable
     /// Gets whether the service is attached to a chart.
     /// </summary>
     bool IsAttached { get; }
+
+    /// <summary>
+    /// Enables or disables snap/magnet functionality.
+    /// </summary>
+    bool SnapEnabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets the snap mode for drawing tools.
+    /// </summary>
+    SnapMode SnapMode { get; set; }
 }
