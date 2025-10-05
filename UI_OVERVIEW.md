@@ -162,10 +162,13 @@ The ChartPro application features a clean, professional interface designed for t
 
 ## Keyboard Shortcuts
 
-Currently not implemented, but could be added:
+**Implemented**:
+- `Ctrl+Z` - Undo last shape operation
+- `Ctrl+Y` - Redo previously undone operation
+
+**Planned for future**:
 - `Esc` - Cancel drawing, return to None mode
 - `Delete` - Remove selected shape
-- `Ctrl+Z` - Undo last shape
 - `1-6` - Quick select drawing tools
 
 ## Real-Time Updates
