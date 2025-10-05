@@ -25,6 +25,8 @@ A professional WinForms trading chart application built with ScottPlot 5 and .NE
 ChartPro/
 ├── Charting/
 │   ├── ChartDrawMode.cs              # Drawing mode enumeration
+│   ├── Models/
+│   │   └── ShapeAnnotation.cs        # Data models for shape serialization
 │   └── Interactions/
 │       ├── IChartInteractions.cs     # Chart interactions interface
 │       └── ChartInteractions.cs      # DI-based service implementation
@@ -38,21 +40,28 @@ ChartPro/
    - `Attach()`: Attaches to a FormsPlot control
    - `SetDrawMode()`: Changes drawing mode
    - `BindCandles()`, `UpdateLastCandle()`, `AddCandle()`: Real-time data management
+   - `SaveShapesToFile()`, `LoadShapesFromFile()`: Persistence operations
    - Implements `IDisposable` for proper cleanup
 
 2. **ChartInteractions**: Service implementation
    - Handles mouse events (MouseDown, MouseMove, MouseUp)
    - Manages shape previews during drawing
    - Finalizes shapes on mouse release
+   - Tracks drawn shapes with metadata for persistence
    - Safely unhooks event handlers on disposal
 
-3. **Program.cs**: DI Container Setup
+3. **ShapeAnnotation**: Data model for serializing shapes
+   - Stores shape type, coordinates, colors, and styles
+   - Enables JSON serialization/deserialization
+
+4. **Program.cs**: DI Container Setup
    - Registers `IChartInteractions` service
    - Configures application startup
 
-4. **MainForm**: UI with integrated service
+5. **MainForm**: UI with integrated service
    - Receives `IChartInteractions` via constructor injection
    - Provides toolbar for drawing mode selection
+   - Includes Save/Load buttons for annotation persistence
    - Demonstrates sample data generation
 
 ## Building
