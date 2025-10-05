@@ -198,6 +198,7 @@ public class ChartInteractions : IChartInteractions
             ChartDrawMode.HorizontalLine => CreateHorizontalLinePreview(start, end),
             ChartDrawMode.VerticalLine => CreateVerticalLinePreview(start, end),
             ChartDrawMode.Rectangle => CreateRectanglePreview(start, end),
+            ChartDrawMode.Circle => CreateCirclePreview(start, end),
             ChartDrawMode.FibonacciRetracement => CreateFibonacciPreview(start, end),
             // TODO: Implement other draw modes (FibonacciExtension, Channel, Triangle, Text)
             _ => null
@@ -232,6 +233,7 @@ public class ChartInteractions : IChartInteractions
             ChartDrawMode.HorizontalLine => CreateHorizontalLine(start, end),
             ChartDrawMode.VerticalLine => CreateVerticalLine(start, end),
             ChartDrawMode.Rectangle => CreateRectangle(start, end),
+            ChartDrawMode.Circle => CreateCircle(start, end),
             ChartDrawMode.FibonacciRetracement => CreateFibonacci(start, end),
             // TODO: Implement other draw modes
             _ => null
@@ -316,6 +318,34 @@ public class ChartInteractions : IChartInteractions
         rect.LineColor = Colors.Purple;
         rect.FillColor = Colors.Purple.WithAlpha(0.1);
         return rect;
+    }
+
+    private IPlottable CreateCirclePreview(Coordinates start, Coordinates end)
+    {
+        var centerX = (start.X + end.X) / 2;
+        var centerY = (start.Y + end.Y) / 2;
+        var radiusX = Math.Abs(end.X - start.X) / 2;
+        var radiusY = Math.Abs(end.Y - start.Y) / 2;
+        
+        var circle = _formsPlot!.Plot.Add.Ellipse(centerX, centerY, radiusX, radiusY);
+        circle.LineWidth = 1;
+        circle.LineColor = Colors.Gray.WithAlpha(0.5);
+        circle.FillColor = Colors.Gray.WithAlpha(0.1);
+        return circle;
+    }
+
+    private IPlottable CreateCircle(Coordinates start, Coordinates end)
+    {
+        var centerX = (start.X + end.X) / 2;
+        var centerY = (start.Y + end.Y) / 2;
+        var radiusX = Math.Abs(end.X - start.X) / 2;
+        var radiusY = Math.Abs(end.Y - start.Y) / 2;
+        
+        var circle = _formsPlot!.Plot.Add.Ellipse(centerX, centerY, radiusX, radiusY);
+        circle.LineWidth = 2;
+        circle.LineColor = Colors.Cyan;
+        circle.FillColor = Colors.Cyan.WithAlpha(0.1);
+        return circle;
     }
 
     private IPlottable CreateFibonacciPreview(Coordinates start, Coordinates end)

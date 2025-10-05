@@ -76,7 +76,8 @@ The ChartPro application features a clean, professional interface designed for t
 3. **Horizontal Line** - Draw horizontal price levels
 4. **Vertical Line** - Draw vertical time lines
 5. **Rectangle** - Draw rectangular zones
-6. **Fibonacci** - Draw Fibonacci retracement
+6. **Circle** - Draw circular/elliptical shapes
+7. **Fibonacci** - Draw Fibonacci retracement
 
 **Special Button**:
 - **Generate Sample Data** - Creates 100 random OHLC candles
@@ -143,6 +144,7 @@ The ChartPro application features a clean, professional interface designed for t
 - **Horizontal Line**: Green, 2px width
 - **Vertical Line**: Orange, 2px width
 - **Rectangle**: Purple outline, light purple fill (10% alpha)
+- **Circle**: Cyan outline, light cyan fill (10% alpha)
 - **Fibonacci**: Gold, 2px width
 
 **Previews** (all tools):

@@ -63,6 +63,7 @@ _chartInteractions.SetDrawMode(ChartDrawMode.TrendLine);
 // - HorizontalLine
 // - VerticalLine
 // - Rectangle
+// - Circle
 // - FibonacciRetracement
 // - FibonacciExtension
 // - Channel
