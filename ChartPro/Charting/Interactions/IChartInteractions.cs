@@ -59,4 +59,29 @@ public interface IChartInteractions : IDisposable
     /// Gets whether the service is attached to a chart.
     /// </summary>
     bool IsAttached { get; }
+
+    /// <summary>
+    /// Gets the current mouse coordinates.
+    /// </summary>
+    Coordinates? CurrentMouseCoordinates { get; }
+
+    /// <summary>
+    /// Gets the current shape info (length, angle, size).
+    /// </summary>
+    string? CurrentShapeInfo { get; }
+
+    /// <summary>
+    /// Event fired when the drawing mode changes.
+    /// </summary>
+    event EventHandler<ChartDrawMode>? DrawModeChanged;
+
+    /// <summary>
+    /// Event fired when mouse coordinates change.
+    /// </summary>
+    event EventHandler<Coordinates>? MouseCoordinatesChanged;
+
+    /// <summary>
+    /// Event fired when shape info changes.
+    /// </summary>
+    event EventHandler<string>? ShapeInfoChanged;
 }

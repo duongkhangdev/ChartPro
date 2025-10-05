@@ -12,6 +12,9 @@ A professional WinForms trading chart application built with ScottPlot 5 and .NE
   - Rectangles
   - Circles
   - Fibonacci retracement (with extensibility for additional tools)
+- **Keyboard Shortcuts**: Fast tool switching with number keys (1-6) and ESC to cancel
+- **Status Bar**: Real-time display of drawing mode, coordinates, and shape parameters
+- **Tooltips**: Helpful descriptions on all toolbar buttons
 - **Real-Time Updates**: Support for live candle updates via `BindCandles()`, `UpdateLastCandle()`, and `AddCandle()`
 - **Memory-Safe**: Proper event handler cleanup to prevent memory leaks
 - **ScottPlot 5 Integration**: Built on the latest ScottPlot 5 for high-performance charting
@@ -78,10 +81,21 @@ dotnet run --project ChartPro/ChartPro.csproj
 
 1. Launch the application
 2. Click "Generate Sample Data" to load candlestick data
-3. Select a drawing tool from the right toolbar
+3. Select a drawing tool from the right toolbar or use keyboard shortcuts:
+   - Press `1` for Trend Line
+   - Press `2` for Horizontal Line
+   - Press `3` for Vertical Line
+   - Press `4` for Rectangle
+   - Press `5` for Circle
+   - Press `6` for Fibonacci Retracement
+   - Press `ESC` to cancel drawing and return to pan/zoom mode
 4. Click and drag on the chart to draw
 5. The drawing mode automatically resets to "None" after completing a shape
-6. Pan/zoom is disabled during drawing, enabled otherwise
+6. Monitor the status bar at the bottom for:
+   - Current drawing mode
+   - Mouse coordinates (X, Y)
+   - Shape parameters (length, angle, size) during drawing
+7. Pan/zoom is disabled during drawing, enabled otherwise
 
 ## CI/CD
 

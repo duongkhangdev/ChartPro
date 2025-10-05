@@ -10,6 +10,11 @@ public partial class MainForm : Form
     private readonly IChartInteractions _chartInteractions;
     private FormsPlot? _formsPlot;
     private List<OHLC> _candles = new();
+    private StatusStrip? _statusStrip;
+    private ToolStripStatusLabel? _statusMode;
+    private ToolStripStatusLabel? _statusCoordinates;
+    private ToolStripStatusLabel? _statusShapeInfo;
+    private Dictionary<ChartDrawMode, Button> _modeButtons = new();
 
     public MainForm(IChartInteractions chartInteractions)
     {
@@ -27,6 +32,7 @@ public partial class MainForm : Form
         ClientSize = new Size(1200, 700);
         Name = "MainForm";
         Text = "ChartPro - Trading Chart with ScottPlot 5";
+        KeyPreview = true;
 
         // Create FormsPlot control
         _formsPlot = new FormsPlot
@@ -48,13 +54,13 @@ public partial class MainForm : Form
 
         // Create buttons for drawing modes
         var yPos = 10;
-        var btnNone = CreateToolButton("None", ChartDrawMode.None, ref yPos);
-        var btnTrendLine = CreateToolButton("Trend Line", ChartDrawMode.TrendLine, ref yPos);
-        var btnHorizontal = CreateToolButton("Horizontal Line", ChartDrawMode.HorizontalLine, ref yPos);
-        var btnVertical = CreateToolButton("Vertical Line", ChartDrawMode.VerticalLine, ref yPos);
-        var btnRectangle = CreateToolButton("Rectangle", ChartDrawMode.Rectangle, ref yPos);
-        var btnCircle = CreateToolButton("Circle", ChartDrawMode.Circle, ref yPos);
-        var btnFibonacci = CreateToolButton("Fibonacci", ChartDrawMode.FibonacciRetracement, ref yPos);
+        var btnNone = CreateToolButton("None (ESC)", ChartDrawMode.None, ref yPos, "Cancel drawing and enable pan/zoom");
+        var btnTrendLine = CreateToolButton("Trend Line (1)", ChartDrawMode.TrendLine, ref yPos, "Draw a trend line");
+        var btnHorizontal = CreateToolButton("Horizontal Line (2)", ChartDrawMode.HorizontalLine, ref yPos, "Draw a horizontal price level");
+        var btnVertical = CreateToolButton("Vertical Line (3)", ChartDrawMode.VerticalLine, ref yPos, "Draw a vertical time line");
+        var btnRectangle = CreateToolButton("Rectangle (4)", ChartDrawMode.Rectangle, ref yPos, "Draw a rectangular zone");
+        var btnCircle = CreateToolButton("Circle (5)", ChartDrawMode.Circle, ref yPos, "Draw a circular shape");
+        var btnFibonacci = CreateToolButton("Fibonacci (6)", ChartDrawMode.FibonacciRetracement, ref yPos, "Draw Fibonacci retracement");
 
         yPos += 20;
         var btnGenerateSampleData = new Button
@@ -75,16 +81,55 @@ public partial class MainForm : Form
         toolbarPanel.Controls.Add(btnFibonacci);
         toolbarPanel.Controls.Add(btnGenerateSampleData);
 
+        // Create status bar
+        _statusStrip = new StatusStrip
+        {
+            Name = "statusStrip"
+        };
+
+        _statusMode = new ToolStripStatusLabel
+        {
+            Name = "statusMode",
+            Text = "Mode: None",
+            BorderSides = ToolStripStatusLabelBorderSides.Right,
+            BorderStyle = Border3DStyle.Etched,
+            Width = 150
+        };
+
+        _statusCoordinates = new ToolStripStatusLabel
+        {
+            Name = "statusCoordinates",
+            Text = "X: 0.00, Y: 0.00",
+            BorderSides = ToolStripStatusLabelBorderSides.Right,
+            BorderStyle = Border3DStyle.Etched,
+            Width = 200
+        };
+
+        _statusShapeInfo = new ToolStripStatusLabel
+        {
+            Name = "statusShapeInfo",
+            Text = "",
+            Spring = true,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+
+        _statusStrip.Items.Add(_statusMode);
+        _statusStrip.Items.Add(_statusCoordinates);
+        _statusStrip.Items.Add(_statusShapeInfo);
+
         Controls.Add(_formsPlot);
         Controls.Add(toolbarPanel);
+        Controls.Add(_statusStrip);
 
         Load += MainForm_Load;
         FormClosing += MainForm_FormClosing;
+        KeyDown += MainForm_KeyDown;
 
         ResumeLayout(false);
+        PerformLayout();
     }
 
-    private Button CreateToolButton(string text, ChartDrawMode mode, ref int yPos)
+    private Button CreateToolButton(string text, ChartDrawMode mode, ref int yPos, string? tooltip = null)
     {
         var button = new Button
         {
@@ -95,6 +140,16 @@ public partial class MainForm : Form
             Tag = mode
         };
         button.Click += ToolButton_Click;
+        
+        if (!string.IsNullOrEmpty(tooltip))
+        {
+            var toolTip = new ToolTip();
+            toolTip.SetToolTip(button, tooltip);
+        }
+
+        // Store button reference for keyboard shortcuts
+        _modeButtons[mode] = button;
+
         yPos += 35;
         return button;
     }
@@ -139,6 +194,11 @@ public partial class MainForm : Form
         _formsPlot.Plot.Title("ChartPro - Trading Chart");
         _formsPlot.Plot.Axes.Bottom.Label.Text = "Time";
         _formsPlot.Plot.Axes.Left.Label.Text = "Price";
+
+        // Wire up chart interactions events
+        _chartInteractions.DrawModeChanged += OnDrawModeChanged;
+        _chartInteractions.MouseCoordinatesChanged += OnMouseCoordinatesChanged;
+        _chartInteractions.ShapeInfoChanged += OnShapeInfoChanged;
 
         _formsPlot.Refresh();
     }
@@ -186,5 +246,80 @@ public partial class MainForm : Form
         }
 
         return candles;
+    }
+
+    private void MainForm_KeyDown(object? sender, KeyEventArgs e)
+    {
+        // Handle ESC key to cancel drawing
+        if (e.KeyCode == Keys.Escape)
+        {
+            _chartInteractions.SetDrawMode(ChartDrawMode.None);
+            if (_modeButtons.TryGetValue(ChartDrawMode.None, out var button))
+            {
+                UpdateButtonStyles(button);
+            }
+            e.Handled = true;
+            return;
+        }
+
+        // Handle number keys for tool selection
+        ChartDrawMode? mode = e.KeyCode switch
+        {
+            Keys.D1 or Keys.NumPad1 => ChartDrawMode.TrendLine,
+            Keys.D2 or Keys.NumPad2 => ChartDrawMode.HorizontalLine,
+            Keys.D3 or Keys.NumPad3 => ChartDrawMode.VerticalLine,
+            Keys.D4 or Keys.NumPad4 => ChartDrawMode.Rectangle,
+            Keys.D5 or Keys.NumPad5 => ChartDrawMode.Circle,
+            Keys.D6 or Keys.NumPad6 => ChartDrawMode.FibonacciRetracement,
+            _ => null
+        };
+
+        if (mode.HasValue)
+        {
+            _chartInteractions.SetDrawMode(mode.Value);
+            if (_modeButtons.TryGetValue(mode.Value, out var button))
+            {
+                UpdateButtonStyles(button);
+            }
+            e.Handled = true;
+        }
+
+        // TODO: Implement Ctrl+Z (Undo) and Ctrl+Y (Redo) in future
+    }
+
+    private void OnDrawModeChanged(object? sender, ChartDrawMode mode)
+    {
+        if (_statusMode == null)
+            return;
+
+        var modeText = mode switch
+        {
+            ChartDrawMode.None => "None",
+            ChartDrawMode.TrendLine => "Trend Line",
+            ChartDrawMode.HorizontalLine => "Horizontal Line",
+            ChartDrawMode.VerticalLine => "Vertical Line",
+            ChartDrawMode.Rectangle => "Rectangle",
+            ChartDrawMode.Circle => "Circle",
+            ChartDrawMode.FibonacciRetracement => "Fibonacci",
+            _ => mode.ToString()
+        };
+
+        _statusMode.Text = $"Mode: {modeText}";
+    }
+
+    private void OnMouseCoordinatesChanged(object? sender, Coordinates coordinates)
+    {
+        if (_statusCoordinates == null)
+            return;
+
+        _statusCoordinates.Text = $"X: {coordinates.X:F2}, Y: {coordinates.Y:F2}";
+    }
+
+    private void OnShapeInfoChanged(object? sender, string info)
+    {
+        if (_statusShapeInfo == null)
+            return;
+
+        _statusShapeInfo.Text = info;
     }
 }

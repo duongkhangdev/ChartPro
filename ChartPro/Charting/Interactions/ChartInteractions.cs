@@ -20,9 +20,17 @@ public class ChartInteractions : IChartInteractions
     // Drawing state
     private Coordinates? _drawStartCoordinates;
     private IPlottable? _previewPlottable;
+    private Coordinates? _currentMouseCoordinates;
+    private string? _currentShapeInfo;
 
     public ChartDrawMode CurrentDrawMode => _currentDrawMode;
     public bool IsAttached => _isAttached;
+    public Coordinates? CurrentMouseCoordinates => _currentMouseCoordinates;
+    public string? CurrentShapeInfo => _currentShapeInfo;
+
+    public event EventHandler<ChartDrawMode>? DrawModeChanged;
+    public event EventHandler<Coordinates>? MouseCoordinatesChanged;
+    public event EventHandler<string>? ShapeInfoChanged;
 
     /// <summary>
     /// Attaches the interaction service to a FormsPlot control.
@@ -79,6 +87,9 @@ public class ChartInteractions : IChartInteractions
         // Clear any preview
         ClearPreview();
 
+        // Clear shape info when changing modes
+        UpdateShapeInfo(null);
+
         // Disable pan/zoom when in drawing mode
         if (mode != ChartDrawMode.None && _formsPlot != null)
         {
@@ -88,6 +99,9 @@ public class ChartInteractions : IChartInteractions
         {
             _formsPlot.UserInputProcessor.IsEnabled = true;
         }
+
+        // Fire mode changed event
+        DrawModeChanged?.Invoke(this, mode);
     }
 
     /// <summary>
@@ -144,14 +158,18 @@ public class ChartInteractions : IChartInteractions
 
     private void OnMouseMove(object? sender, MouseEventArgs e)
     {
-        if (_formsPlot == null || _currentDrawMode == ChartDrawMode.None)
+        if (_formsPlot == null)
+            return;
+
+        // Always update mouse coordinates
+        var currentCoordinates = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
+        UpdateMouseCoordinates(currentCoordinates);
+
+        if (_currentDrawMode == ChartDrawMode.None)
             return;
 
         if (_drawStartCoordinates == null)
             return;
-
-        // Get current mouse coordinates
-        var currentCoordinates = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
 
         // Update preview
         UpdatePreview(_drawStartCoordinates.Value, currentCoordinates);
@@ -181,6 +199,41 @@ public class ChartInteractions : IChartInteractions
 
     #endregion
 
+    #region Status Updates
+
+    private void UpdateMouseCoordinates(Coordinates coordinates)
+    {
+        _currentMouseCoordinates = coordinates;
+        MouseCoordinatesChanged?.Invoke(this, coordinates);
+    }
+
+    private void UpdateShapeInfo(string? info)
+    {
+        _currentShapeInfo = info;
+        ShapeInfoChanged?.Invoke(this, info ?? string.Empty);
+    }
+
+    private string CalculateShapeInfo(Coordinates start, Coordinates end)
+    {
+        var deltaX = end.X - start.X;
+        var deltaY = end.Y - start.Y;
+        var distance = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+        var angle = Math.Atan2(deltaY, deltaX) * 180.0 / Math.PI;
+
+        return _currentDrawMode switch
+        {
+            ChartDrawMode.TrendLine => $"Length: {distance:F2}, Angle: {angle:F1}°",
+            ChartDrawMode.HorizontalLine => $"Price: {end.Y:F2}",
+            ChartDrawMode.VerticalLine => $"Time: {end.X:F2}",
+            ChartDrawMode.Rectangle => $"Width: {Math.Abs(deltaX):F2}, Height: {Math.Abs(deltaY):F2}",
+            ChartDrawMode.Circle => $"RadiusX: {Math.Abs(deltaX) / 2:F2}, RadiusY: {Math.Abs(deltaY) / 2:F2}",
+            ChartDrawMode.FibonacciRetracement => $"Range: {Math.Abs(deltaY):F2}",
+            _ => string.Empty
+        };
+    }
+
+    #endregion
+
     #region Drawing Methods
 
     private void UpdatePreview(Coordinates start, Coordinates end)
@@ -190,6 +243,10 @@ public class ChartInteractions : IChartInteractions
 
         // Clear previous preview
         ClearPreview();
+
+        // Calculate and update shape info
+        var shapeInfo = CalculateShapeInfo(start, end);
+        UpdateShapeInfo(shapeInfo);
 
         // Create preview based on draw mode
         _previewPlottable = _currentDrawMode switch
