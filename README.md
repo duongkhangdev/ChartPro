@@ -131,6 +131,8 @@ Each shape stores:
 - **FillColor**: Fill color for shapes like rectangles and circles
 - **FillAlpha**: Transparency level (0-255)
 
+See `example_annotations.json` in the repository root for a complete example with all shape types.
+
 ## CI/CD
 
 The project includes a GitHub Actions workflow (`.github/workflows/build-and-release.yml`) that:

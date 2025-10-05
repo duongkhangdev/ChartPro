@@ -1,0 +1,71 @@
+{
+  "Version": 1,
+  "Shapes": [
+    {
+      "ShapeType": "TrendLine",
+      "X1": 10.0,
+      "Y1": 100.0,
+      "X2": 50.0,
+      "Y2": 110.0,
+      "LineColor": "#0000FF",
+      "LineWidth": 2,
+      "FillColor": null,
+      "FillAlpha": 25
+    },
+    {
+      "ShapeType": "HorizontalLine",
+      "X1": 0.0,
+      "Y1": 102.5,
+      "X2": 100.0,
+      "Y2": 102.5,
+      "LineColor": "#008000",
+      "LineWidth": 2,
+      "FillColor": null,
+      "FillAlpha": 25
+    },
+    {
+      "ShapeType": "VerticalLine",
+      "X1": 30.0,
+      "Y1": 90.0,
+      "X2": 30.0,
+      "Y2": 115.0,
+      "LineColor": "#FFA500",
+      "LineWidth": 2,
+      "FillColor": null,
+      "FillAlpha": 25
+    },
+    {
+      "ShapeType": "Rectangle",
+      "X1": 20.0,
+      "Y1": 95.0,
+      "X2": 40.0,
+      "Y2": 105.0,
+      "LineColor": "#800080",
+      "LineWidth": 2,
+      "FillColor": "#800080",
+      "FillAlpha": 25
+    },
+    {
+      "ShapeType": "Circle",
+      "X1": 35.0,
+      "Y1": 98.0,
+      "X2": 45.0,
+      "Y2": 108.0,
+      "LineColor": "#00FFFF",
+      "LineWidth": 2,
+      "FillColor": "#00FFFF",
+      "FillAlpha": 25
+    },
+    {
+      "ShapeType": "FibonacciRetracement",
+      "X1": 15.0,
+      "Y1": 95.0,
+      "X2": 55.0,
+      "Y2": 112.0,
+      "LineColor": "#FFD700",
+      "LineWidth": 2,
+      "FillColor": null,
+      "FillAlpha": 25
+    }
+  ]
+}
