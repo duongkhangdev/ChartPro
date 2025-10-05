@@ -11,7 +11,8 @@ A professional WinForms trading chart application built with ScottPlot 5 and .NE
   - Horizontal and vertical lines
   - Rectangles
   - Circles
-  - Fibonacci retracement (with extensibility for additional tools)
+  - Fibonacci retracement (with all standard levels and price labels)
+  - Fibonacci extension (with projection levels)
 - **Real-Time Updates**: Support for live candle updates via `BindCandles()`, `UpdateLastCandle()`, and `AddCandle()`
 - **Memory-Safe**: Proper event handler cleanup to prevent memory leaks
 - **ScottPlot 5 Integration**: Built on the latest ScottPlot 5 for high-performance charting
@@ -90,11 +91,32 @@ The project includes a GitHub Actions workflow (`.github/workflows/build-and-rel
 - Creates source code archives
 - Attaches artifacts to releases (on tag push)
 
+## Fibonacci Tools
+
+The application includes comprehensive Fibonacci analysis tools:
+
+### Fibonacci Retracement
+- **Levels**: 0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0
+- **Usage**: Draw from swing high to swing low (or vice versa)
+- **Features**: 
+  - Color-coded levels for easy identification
+  - Price labels showing both ratio and actual price value
+  - Real-time preview while drawing
+  - Automatic direction detection (uptrend/downtrend)
+
+### Fibonacci Extension
+- **Levels**: All retracement levels plus 1.272, 1.618, 2.0, 2.618
+- **Usage**: Draw from trend start to trend end to project extension targets
+- **Features**: 
+  - Extended levels for projection targets
+  - Same color-coding and labeling as retracement
+  - Useful for identifying potential profit targets
+
 ## TODO / Future Enhancements
 
 The following features are planned for future implementation:
-- Full Fibonacci retracement with levels (0.236, 0.382, 0.5, 0.618, 0.786)
-- Fibonacci extension tool
+- Customizable Fibonacci levels (show/hide specific levels)
+- Custom level ratios
 - Channel drawing
 - Triangle drawing tool
 - Text annotation tool

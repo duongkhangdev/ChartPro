@@ -77,7 +77,8 @@ The ChartPro application features a clean, professional interface designed for t
 4. **Vertical Line** - Draw vertical time lines
 5. **Rectangle** - Draw rectangular zones
 6. **Circle** - Draw circular/elliptical shapes
-7. **Fibonacci** - Draw Fibonacci retracement
+7. **Fib Retracement** - Draw Fibonacci retracement with all levels and labels
+8. **Fib Extension** - Draw Fibonacci extension with projection levels
 
 **Special Button**:
 - **Generate Sample Data** - Creates 100 random OHLC candles
@@ -145,7 +146,8 @@ The ChartPro application features a clean, professional interface designed for t
 - **Vertical Line**: Orange, 2px width
 - **Rectangle**: Purple outline, light purple fill (10% alpha)
 - **Circle**: Cyan outline, light cyan fill (10% alpha)
-- **Fibonacci**: Gold, 2px width
+- **Fibonacci Retracement**: Multi-colored levels (Red, Orange, Yellow, Green, Blue, Purple), 2px width, with price labels
+- **Fibonacci Extension**: Same as retracement plus extension levels (Cyan, Magenta, DarkRed, DarkBlue)
 
 **Previews** (all tools):
 - Gray color (#808080)
@@ -234,9 +236,9 @@ Planned UI improvements:
    - Toggle visibility
    - Quick select/edit
 5. Fibonacci level customization:
-   - Show/hide individual levels
-   - Add custom levels
-   - Show extensions
+   - UI to show/hide individual levels
+   - Add custom level ratios
+   - Level visibility toggles
 
 ## Testing the UI
 

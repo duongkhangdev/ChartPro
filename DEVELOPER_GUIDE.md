@@ -64,8 +64,8 @@ _chartInteractions.SetDrawMode(ChartDrawMode.TrendLine);
 // - VerticalLine
 // - Rectangle
 // - Circle
-// - FibonacciRetracement
-// - FibonacciExtension
+// - FibonacciRetracement (fully implemented with all levels)
+// - FibonacciExtension (fully implemented with projection levels)
 // - Channel
 // - Triangle
 // - Text
@@ -184,6 +184,44 @@ private void OnMouseUp(object? sender, MouseEventArgs e)
     }
 }
 ```
+
+### Fibonacci Tools Implementation
+
+The Fibonacci tools use a custom plottable implementation:
+
+**Key Components**:
+1. **FibonacciLevel.cs**: Defines level properties (ratio, label, color, visibility)
+2. **FibonacciTool.cs**: Custom IPlottable that renders multiple levels with labels
+
+**Example - Using Fibonacci Levels**:
+```csharp
+// Get default retracement levels
+var levels = FibonacciLevel.GetDefaultRetracementLevels();
+// Returns: 0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0
+
+// Get extension levels (includes retracement + extensions)
+var extLevels = FibonacciLevel.GetDefaultExtensionLevels();
+// Returns: all retracement levels + 1.272, 1.618, 2.0, 2.618
+
+// Create custom levels
+var customLevels = new List<FibonacciLevel>
+{
+    new FibonacciLevel(0.382, "0.382", Colors.Yellow, isVisible: true),
+    new FibonacciLevel(0.618, "0.618", Colors.Blue, isVisible: true),
+    new FibonacciLevel(1.618, "1.618", Colors.Magenta, isVisible: true)
+};
+
+// Create Fibonacci tool
+var fibTool = new FibonacciTool(startCoord, endCoord, customLevels, isPreview: false);
+```
+
+**Features**:
+- Automatic price calculation based on coordinate range
+- Color-coded levels for easy identification
+- Inline labels showing ratio and actual price
+- Preview mode (semi-transparent, no labels)
+- Final mode (solid colors with labels)
+- Direction-agnostic (works for uptrends and downtrends)
 
 ### Custom Event Handlers
 
