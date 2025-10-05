@@ -25,8 +25,17 @@ This document describes the implementation of the DI-based ChartInteractions ser
 - HorizontalLine
 - VerticalLine
 - Rectangle
+- Circle
 - FibonacciRetracement
 - Additional modes defined for future implementation
+
+✅ **Strategy Pattern Architecture**
+- Created `IDrawModeStrategy` interface for extensible draw modes
+- Implemented individual strategy classes for each draw mode
+- Created `DrawModeStrategyFactory` for strategy instantiation
+- Refactored `ChartInteractions` to use strategies instead of switch-case
+- Added comprehensive unit tests for all strategies
+- See [STRATEGY_PATTERN.md](STRATEGY_PATTERN.md) for detailed documentation
 
 ✅ **Memory Safety**
 - Event handlers properly hooked in `Attach()`
