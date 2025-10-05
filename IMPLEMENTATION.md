@@ -124,6 +124,7 @@ Implemented:
 - **Horizontal Line**: Y-axis aligned
 - **Vertical Line**: X-axis aligned
 - **Rectangle**: Four-corner shape
+- **Circle**: Elliptical shape
 - **Fibonacci**: Base implementation (expandable)
 
 Each tool has:

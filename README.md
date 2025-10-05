@@ -10,6 +10,7 @@ A professional WinForms trading chart application built with ScottPlot 5 and .NE
   - Trend lines
   - Horizontal and vertical lines
   - Rectangles
+  - Circles
   - Fibonacci retracement (with extensibility for additional tools)
 - **Real-Time Updates**: Support for live candle updates via `BindCandles()`, `UpdateLastCandle()`, and `AddCandle()`
 - **Memory-Safe**: Proper event handler cleanup to prevent memory leaks

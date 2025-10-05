@@ -89,7 +89,8 @@ public interface IChartInteractions : IDisposable
 2. **Horizontal Line** - Price level lines
 3. **Vertical Line** - Time marker lines
 4. **Rectangle** - Rectangular zones
-5. **Fibonacci Retracement** - Base implementation (expandable)
+5. **Circle** - Circular/elliptical shapes
+6. **Fibonacci Retracement** - Base implementation (expandable)
 
 **Preview System**:
 - Semi-transparent gray previews during drawing
