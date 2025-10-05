@@ -1,0 +1,73 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore ChartPro/ChartPro.csproj
+
+    - name: Build
+      run: dotnet build ChartPro/ChartPro.csproj --configuration Release --no-restore
+
+    - name: Publish
+      run: dotnet publish ChartPro/ChartPro.csproj --configuration Release --output ./publish --no-build
+
+    - name: Create source code archive
+      run: |
+        $exclude = @('bin', 'obj', '.git', '.vs', 'publish', 'packages')
+        $files = Get-ChildItem -Path . -Recurse | Where-Object {
+          $item = $_
+          -not ($exclude | Where-Object { $item.FullName -like "*\$_\*" -or $item.Name -eq $_ })
+        }
+        Compress-Archive -Path ChartPro/* -DestinationPath ./ChartPro-Source.zip -Force
+      shell: pwsh
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ChartPro-Build
+        path: ./publish
+
+    - name: Upload source code artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ChartPro-Source
+        path: ./ChartPro-Source.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ChartPro-Source
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ChartPro-Source.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
