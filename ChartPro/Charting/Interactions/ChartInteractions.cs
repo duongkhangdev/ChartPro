@@ -3,6 +3,8 @@ using ChartPro.Charting.Shapes;
 using ScottPlot;
 using ScottPlot.WinForms;
 using System.Drawing;
+using System.Text.Json;
+using ChartPro.Charting.Models;
 
 namespace ChartPro.Charting.Interactions;
 
@@ -22,6 +24,8 @@ public class ChartInteractions : IChartInteractions
     // Drawing state
     private Coordinates? _drawStartCoordinates;
     private IPlottable? _previewPlottable;
+    private Coordinates? _currentMouseCoordinates;
+    private string? _currentShapeInfo;
 
     // Shape management
     private readonly IShapeManager _shapeManager;
@@ -52,6 +56,8 @@ public class ChartInteractions : IChartInteractions
         _formsPlot.MouseDown += OnMouseDown;
         _formsPlot.MouseMove += OnMouseMove;
         _formsPlot.MouseUp += OnMouseUp;
+        _formsPlot.KeyDown += OnKeyDown;
+        _formsPlot.KeyUp += OnKeyUp;
 
         _isAttached = true;
     }
@@ -90,6 +96,9 @@ public class ChartInteractions : IChartInteractions
         // Clear any preview
         ClearPreview();
 
+        // Clear shape info when changing modes
+        UpdateShapeInfo(null);
+
         // Disable pan/zoom when in drawing mode
         if (mode != ChartDrawMode.None && _formsPlot != null)
         {
@@ -99,6 +108,9 @@ public class ChartInteractions : IChartInteractions
         {
             _formsPlot.UserInputProcessor.IsEnabled = true;
         }
+
+        // Fire mode changed event
+        DrawModeChanged?.Invoke(this, mode);
     }
 
     /// <summary>
@@ -139,7 +151,23 @@ public class ChartInteractions : IChartInteractions
         _formsPlot?.Refresh();
     }
 
-    #region Mouse Event Handlers
+    #region Event Handlers
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode == Keys.ShiftKey)
+        {
+            _shiftKeyPressed = true;
+        }
+    }
+
+    private void OnKeyUp(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode == Keys.ShiftKey)
+        {
+            _shiftKeyPressed = false;
+        }
+    }
 
     private void OnMouseDown(object? sender, MouseEventArgs e)
     {
@@ -158,21 +186,26 @@ public class ChartInteractions : IChartInteractions
 
         if (e.Button == MouseButtons.Left)
         {
-            // Store the starting coordinates
-            _drawStartCoordinates = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
+            // Store the starting coordinates with snap applied
+            var coords = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
+            _drawStartCoordinates = ApplySnap(coords);
         }
     }
 
     private void OnMouseMove(object? sender, MouseEventArgs e)
     {
-        if (_formsPlot == null || _currentDrawMode == ChartDrawMode.None)
+        if (_formsPlot == null)
+            return;
+
+        // Always update mouse coordinates
+        var currentCoordinates = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
+        UpdateMouseCoordinates(currentCoordinates);
+
+        if (_currentDrawMode == ChartDrawMode.None)
             return;
 
         if (_drawStartCoordinates == null)
             return;
-
-        // Get current mouse coordinates
-        var currentCoordinates = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
 
         // Update preview
         UpdatePreview(_drawStartCoordinates.Value, currentCoordinates);
@@ -185,8 +218,9 @@ public class ChartInteractions : IChartInteractions
 
         if (e.Button == MouseButtons.Left && _drawStartCoordinates != null)
         {
-            // Get final coordinates
+            // Get final coordinates with snap applied
             var endCoordinates = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
+            endCoordinates = ApplySnap(endCoordinates);
 
             // Finalize the shape
             FinalizeShape(_drawStartCoordinates.Value, endCoordinates);
@@ -202,6 +236,41 @@ public class ChartInteractions : IChartInteractions
 
     #endregion
 
+    #region Status Updates
+
+    private void UpdateMouseCoordinates(Coordinates coordinates)
+    {
+        _currentMouseCoordinates = coordinates;
+        MouseCoordinatesChanged?.Invoke(this, coordinates);
+    }
+
+    private void UpdateShapeInfo(string? info)
+    {
+        _currentShapeInfo = info;
+        ShapeInfoChanged?.Invoke(this, info ?? string.Empty);
+    }
+
+    private string CalculateShapeInfo(Coordinates start, Coordinates end)
+    {
+        var deltaX = end.X - start.X;
+        var deltaY = end.Y - start.Y;
+        var distance = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+        var angle = Math.Atan2(deltaY, deltaX) * 180.0 / Math.PI;
+
+        return _currentDrawMode switch
+        {
+            ChartDrawMode.TrendLine => $"Length: {distance:F2}, Angle: {angle:F1}°",
+            ChartDrawMode.HorizontalLine => $"Price: {end.Y:F2}",
+            ChartDrawMode.VerticalLine => $"Time: {end.X:F2}",
+            ChartDrawMode.Rectangle => $"Width: {Math.Abs(deltaX):F2}, Height: {Math.Abs(deltaY):F2}",
+            ChartDrawMode.Circle => $"RadiusX: {Math.Abs(deltaX) / 2:F2}, RadiusY: {Math.Abs(deltaY) / 2:F2}",
+            ChartDrawMode.FibonacciRetracement => $"Range: {Math.Abs(deltaY):F2}",
+            _ => string.Empty
+        };
+    }
+
+    #endregion
+
     #region Drawing Methods
 
     private void UpdatePreview(Coordinates start, Coordinates end)
@@ -211,6 +280,10 @@ public class ChartInteractions : IChartInteractions
 
         // Clear previous preview
         ClearPreview();
+
+        // Calculate and update shape info
+        var shapeInfo = CalculateShapeInfo(start, end);
+        UpdateShapeInfo(shapeInfo);
 
         // Create preview based on draw mode
         _previewPlottable = _currentDrawMode switch
@@ -227,6 +300,7 @@ public class ChartInteractions : IChartInteractions
 
         if (_previewPlottable != null)
         {
+            _previewPlottable = strategy.CreatePreview(start, end, _formsPlot.Plot);
             _formsPlot.Plot.Add.Plottable(_previewPlottable);
             _formsPlot.Refresh();
         }
@@ -247,20 +321,9 @@ public class ChartInteractions : IChartInteractions
         if (_formsPlot == null)
             return;
 
-        // Create permanent plottable based on draw mode
-        IPlottable? plottable = _currentDrawMode switch
-        {
-            ChartDrawMode.TrendLine => CreateTrendLine(start, end),
-            ChartDrawMode.HorizontalLine => CreateHorizontalLine(start, end),
-            ChartDrawMode.VerticalLine => CreateVerticalLine(start, end),
-            ChartDrawMode.Rectangle => CreateRectangle(start, end),
-            ChartDrawMode.Circle => CreateCircle(start, end),
-            ChartDrawMode.FibonacciRetracement => CreateFibonacci(start, end),
-            // TODO: Implement other draw modes
-            _ => null
-        };
-
-        if (plottable != null)
+        // Use strategy pattern to create final shape
+        var strategy = DrawModeStrategyFactory.CreateStrategy(_currentDrawMode);
+        if (strategy != null)
         {
             // Create a DrawnShape and add it via command pattern
             var shape = new DrawnShape(plottable, _currentDrawMode);
@@ -270,126 +333,128 @@ public class ChartInteractions : IChartInteractions
         }
     }
 
-    private IPlottable CreateTrendLinePreview(Coordinates start, Coordinates end)
+
+
+    #endregion
+
+    #region Shape Persistence
+
+    private ShapeAnnotation CreateShapeMetadata(ChartDrawMode drawMode, Coordinates start, Coordinates end)
     {
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 1;
-        line.LineColor = Colors.Gray.WithAlpha(0.5);
-        return line;
+        var metadata = new ShapeAnnotation
+        {
+            ShapeType = drawMode.ToString(),
+            X1 = start.X,
+            Y1 = start.Y,
+            X2 = end.X,
+            Y2 = end.Y
+        };
+
+        // Set colors and styles based on shape type
+        switch (drawMode)
+        {
+            case ChartDrawMode.TrendLine:
+                metadata.LineColor = "#0000FF"; // Blue
+                metadata.LineWidth = 2;
+                break;
+            case ChartDrawMode.HorizontalLine:
+                metadata.LineColor = "#008000"; // Green
+                metadata.LineWidth = 2;
+                break;
+            case ChartDrawMode.VerticalLine:
+                metadata.LineColor = "#FFA500"; // Orange
+                metadata.LineWidth = 2;
+                break;
+            case ChartDrawMode.Rectangle:
+                metadata.LineColor = "#800080"; // Purple
+                metadata.LineWidth = 2;
+                metadata.FillColor = "#800080";
+                metadata.FillAlpha = 25;
+                break;
+            case ChartDrawMode.Circle:
+                metadata.LineColor = "#00FFFF"; // Cyan
+                metadata.LineWidth = 2;
+                metadata.FillColor = "#00FFFF";
+                metadata.FillAlpha = 25;
+                break;
+            case ChartDrawMode.FibonacciRetracement:
+                metadata.LineColor = "#FFD700"; // Gold
+                metadata.LineWidth = 2;
+                break;
+        }
+
+        return metadata;
     }
 
-    private IPlottable CreateTrendLine(Coordinates start, Coordinates end)
+    public void SaveShapesToFile(string filePath)
     {
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 2;
-        line.LineColor = Colors.Blue;
-        return line;
+        var annotations = new ChartAnnotations
+        {
+            Version = 1,
+            Shapes = _drawnShapes.Select(s => s.metadata).ToList()
+        };
+
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true
+        };
+
+        var json = JsonSerializer.Serialize(annotations, options);
+        File.WriteAllText(filePath, json);
     }
 
-    private IPlottable CreateHorizontalLinePreview(Coordinates start, Coordinates end)
+    public void LoadShapesFromFile(string filePath)
     {
-        var hLine = _formsPlot!.Plot.Add.HorizontalLine(end.Y);
-        hLine.LineWidth = 1;
-        hLine.LineColor = Colors.Gray.WithAlpha(0.5);
-        return hLine;
-    }
+        if (_formsPlot == null)
+            throw new InvalidOperationException("Chart is not attached. Call Attach() first.");
 
-    private IPlottable CreateHorizontalLine(Coordinates start, Coordinates end)
-    {
-        var hLine = _formsPlot!.Plot.Add.HorizontalLine(end.Y);
-        hLine.LineWidth = 2;
-        hLine.LineColor = Colors.Green;
-        return hLine;
-    }
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException("Annotations file not found.", filePath);
 
-    private IPlottable CreateVerticalLinePreview(Coordinates start, Coordinates end)
-    {
-        var vLine = _formsPlot!.Plot.Add.VerticalLine(end.X);
-        vLine.LineWidth = 1;
-        vLine.LineColor = Colors.Gray.WithAlpha(0.5);
-        return vLine;
-    }
+        var json = File.ReadAllText(filePath);
+        var annotations = JsonSerializer.Deserialize<ChartAnnotations>(json);
 
-    private IPlottable CreateVerticalLine(Coordinates start, Coordinates end)
-    {
-        var vLine = _formsPlot!.Plot.Add.VerticalLine(end.X);
-        vLine.LineWidth = 2;
-        vLine.LineColor = Colors.Orange;
-        return vLine;
-    }
+        if (annotations == null || annotations.Shapes == null)
+            return;
 
-    private IPlottable CreateRectanglePreview(Coordinates start, Coordinates end)
-    {
-        var rect = _formsPlot!.Plot.Add.Rectangle(
-            Math.Min(start.X, end.X),
-            Math.Max(start.X, end.X),
-            Math.Min(start.Y, end.Y),
-            Math.Max(start.Y, end.Y));
-        rect.LineWidth = 1;
-        rect.LineColor = Colors.Gray.WithAlpha(0.5);
-        rect.FillColor = Colors.Gray.WithAlpha(0.1);
-        return rect;
-    }
+        // Clear existing shapes
+        foreach (var (plottable, _) in _drawnShapes)
+        {
+            _formsPlot.Plot.Remove(plottable);
+        }
+        _drawnShapes.Clear();
 
-    private IPlottable CreateRectangle(Coordinates start, Coordinates end)
-    {
-        var rect = _formsPlot!.Plot.Add.Rectangle(
-            Math.Min(start.X, end.X),
-            Math.Max(start.X, end.X),
-            Math.Min(start.Y, end.Y),
-            Math.Max(start.Y, end.Y));
-        rect.LineWidth = 2;
-        rect.LineColor = Colors.Purple;
-        rect.FillColor = Colors.Purple.WithAlpha(0.1);
-        return rect;
-    }
+        // Load and recreate each shape
+        foreach (var shape in annotations.Shapes)
+        {
+            var start = new Coordinates(shape.X1, shape.Y1);
+            var end = new Coordinates(shape.X2, shape.Y2);
 
-    private IPlottable CreateCirclePreview(Coordinates start, Coordinates end)
-    {
-        var centerX = (start.X + end.X) / 2;
-        var centerY = (start.Y + end.Y) / 2;
-        var radiusX = Math.Abs(end.X - start.X) / 2;
-        var radiusY = Math.Abs(end.Y - start.Y) / 2;
-        
-        var circle = _formsPlot!.Plot.Add.Ellipse(centerX, centerY, radiusX, radiusY);
-        circle.LineWidth = 1;
-        circle.LineColor = Colors.Gray.WithAlpha(0.5);
-        circle.FillColor = Colors.Gray.WithAlpha(0.1);
-        return circle;
-    }
+            IPlottable? plottable = null;
 
-    private IPlottable CreateCircle(Coordinates start, Coordinates end)
-    {
-        var centerX = (start.X + end.X) / 2;
-        var centerY = (start.Y + end.Y) / 2;
-        var radiusX = Math.Abs(end.X - start.X) / 2;
-        var radiusY = Math.Abs(end.Y - start.Y) / 2;
-        
-        var circle = _formsPlot!.Plot.Add.Ellipse(centerX, centerY, radiusX, radiusY);
-        circle.LineWidth = 2;
-        circle.LineColor = Colors.Cyan;
-        circle.FillColor = Colors.Cyan.WithAlpha(0.1);
-        return circle;
-    }
+            // Parse the shape type and create the appropriate plottable
+            if (Enum.TryParse<ChartDrawMode>(shape.ShapeType, out var drawMode))
+            {
+                plottable = drawMode switch
+                {
+                    ChartDrawMode.TrendLine => CreateTrendLine(start, end),
+                    ChartDrawMode.HorizontalLine => CreateHorizontalLine(start, end),
+                    ChartDrawMode.VerticalLine => CreateVerticalLine(start, end),
+                    ChartDrawMode.Rectangle => CreateRectangle(start, end),
+                    ChartDrawMode.Circle => CreateCircle(start, end),
+                    ChartDrawMode.FibonacciRetracement => CreateFibonacci(start, end),
+                    _ => null
+                };
 
-    private IPlottable CreateFibonacciPreview(Coordinates start, Coordinates end)
-    {
-        // TODO: Implement full Fibonacci retracement with levels (0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0)
-        // For now, create a simple line as preview
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 1;
-        line.LineColor = Colors.Gold.WithAlpha(0.5);
-        return line;
-    }
+                if (plottable != null)
+                {
+                    _drawnShapes.Add((plottable, shape));
+                    _formsPlot.Plot.Add.Plottable(plottable);
+                }
+            }
+        }
 
-    private IPlottable CreateFibonacci(Coordinates start, Coordinates end)
-    {
-        // TODO: Implement full Fibonacci retracement with levels and labels
-        // For now, create a simple line
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 2;
-        line.LineColor = Colors.Gold;
-        return line;
+        _formsPlot.Refresh();
     }
 
     #endregion
@@ -575,6 +640,8 @@ public class ChartInteractions : IChartInteractions
                 _formsPlot.MouseDown -= OnMouseDown;
                 _formsPlot.MouseMove -= OnMouseMove;
                 _formsPlot.MouseUp -= OnMouseUp;
+                _formsPlot.KeyDown -= OnKeyDown;
+                _formsPlot.KeyUp -= OnKeyUp;
             }
 
             _formsPlot = null;

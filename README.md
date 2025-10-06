@@ -26,6 +26,13 @@ A professional WinForms trading chart application built with ScottPlot 5 and .NE
 
 ## Architecture
 
+ChartPro uses **Strategy and Factory patterns** for extensible drawing modes. Each draw mode is implemented as a separate strategy class, making it easy to add new tools without modifying existing code.
+
+For detailed architecture documentation, see:
+- [STRATEGY_PATTERN.md](STRATEGY_PATTERN.md) - Strategy/Factory pattern architecture
+- [IMPLEMENTATION.md](IMPLEMENTATION.md) - Implementation details
+- [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) - Developer guidelines
+
 ### Project Structure
 
 ```
@@ -42,7 +49,16 @@ ChartPro/
 │   │   └── ShapeManager.cs           # Shape manager implementation
 │   └── Interactions/
 │       ├── IChartInteractions.cs     # Chart interactions interface
-│       └── ChartInteractions.cs      # DI-based service implementation
+│       ├── ChartInteractions.cs      # DI-based service implementation
+│       └── Strategies/               # Strategy pattern for draw modes
+│           ├── IDrawModeStrategy.cs          # Strategy interface
+│           ├── DrawModeStrategyFactory.cs    # Factory for creating strategies
+│           ├── TrendLineStrategy.cs          # Trend line implementation
+│           ├── HorizontalLineStrategy.cs     # Horizontal line implementation
+│           ├── VerticalLineStrategy.cs       # Vertical line implementation
+│           ├── RectangleStrategy.cs          # Rectangle implementation
+│           ├── CircleStrategy.cs             # Circle/ellipse implementation
+│           └── FibonacciRetracementStrategy.cs # Fibonacci implementation
 ├── MainForm.cs                        # Main application form with FormsPlot control
 └── Program.cs                         # Application entry point with DI setup
 
@@ -64,6 +80,7 @@ ChartPro.Tests/                        # Unit test project
 
 2. **ChartInteractions**: Service implementation
    - Handles mouse events (MouseDown, MouseMove, MouseUp)
+   - Uses strategy pattern to delegate drawing logic to mode-specific strategies
    - Manages shape previews during drawing
    - Finalizes shapes on mouse release via Command pattern
    - Shape selection support (click to select, Ctrl+Click for multi-select)
@@ -90,6 +107,11 @@ ChartPro.Tests/                        # Unit test project
    - Keyboard shortcuts for undo/redo/delete operations
    - Demonstrates sample data generation
 
+6. **Unit Tests**: Comprehensive test coverage
+   - Individual strategy tests validate each draw mode
+   - Factory tests ensure correct strategy instantiation
+   - Tests run on Windows with WinForms support
+
 ## Building
 
 ### Requirements
@@ -114,10 +136,21 @@ dotnet run --project ChartPro/ChartPro.csproj
 
 1. Launch the application
 2. Click "Generate Sample Data" to load candlestick data
-3. Select a drawing tool from the right toolbar
+3. Select a drawing tool from the right toolbar or use keyboard shortcuts:
+   - Press `1` for Trend Line
+   - Press `2` for Horizontal Line
+   - Press `3` for Vertical Line
+   - Press `4` for Rectangle
+   - Press `5` for Circle
+   - Press `6` for Fibonacci Retracement
+   - Press `ESC` to cancel drawing and return to pan/zoom mode
 4. Click and drag on the chart to draw
 5. The drawing mode automatically resets to "None" after completing a shape
-6. Pan/zoom is disabled during drawing, enabled otherwise
+6. Monitor the status bar at the bottom for:
+   - Current drawing mode
+   - Mouse coordinates (X, Y)
+   - Shape parameters (length, angle, size) during drawing
+7. Pan/zoom is disabled during drawing, enabled otherwise
 
 ### Shape Management
 
