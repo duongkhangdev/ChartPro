@@ -297,7 +297,8 @@ public class ChartInteractions : IChartInteractions
             ChartDrawMode.Rectangle => CreateRectanglePreview(start, end),
             ChartDrawMode.Circle => CreateCirclePreview(start, end),
             ChartDrawMode.FibonacciRetracement => CreateFibonacciPreview(start, end),
-            // TODO: Implement other draw modes (FibonacciExtension, Channel, Triangle, Text)
+            ChartDrawMode.FibonacciExtension => CreateFibonacciPreview(start, end),
+            // TODO: Implement other draw modes (Channel, Triangle, Text)
             _ => null
         };
 
@@ -334,7 +335,8 @@ public class ChartInteractions : IChartInteractions
             ChartDrawMode.Rectangle => CreateRectangle(start, end),
             ChartDrawMode.Circle => CreateCircle(start, end),
             ChartDrawMode.FibonacciRetracement => CreateFibonacci(start, end),
-            // TODO: Implement other draw modes
+            ChartDrawMode.FibonacciExtension => CreateFibonacci(start, end),
+            // TODO: Implement other draw modes (Channel, Triangle, Text)
             _ => null
         };
 
@@ -601,31 +603,20 @@ public class ChartInteractions : IChartInteractions
 
     public bool Redo()
     {
-        if (!_shapeManager.CanRedo)
-            return false;
-
-        var result = _shapeManager.Redo();
-        _formsPlot?.Refresh();
-        return result;
+        var levels = _currentDrawMode == ChartDrawMode.FibonacciExtension
+            ? FibonacciLevel.GetDefaultExtensionLevels()
+            : FibonacciLevel.GetDefaultRetracementLevels();
+        
+        return new FibonacciTool(start, end, levels, isPreview: true);
     }
 
     public void DeleteSelectedShapes()
     {
-        if (_formsPlot == null)
-            return;
-
-        var selectedShapes = _shapeManager.Shapes.Where(s => s.IsSelected).ToList();
+        var levels = _currentDrawMode == ChartDrawMode.FibonacciExtension
+            ? FibonacciLevel.GetDefaultExtensionLevels()
+            : FibonacciLevel.GetDefaultRetracementLevels();
         
-        foreach (var shape in selectedShapes)
-        {
-            var command = new DeleteShapeCommand(_shapeManager, shape, _formsPlot.Plot);
-            _shapeManager.ExecuteCommand(command);
-        }
-
-        if (selectedShapes.Any())
-        {
-            _formsPlot.Refresh();
-        }
+        return new FibonacciTool(start, end, levels, isPreview: false);
     }
 
     #endregion

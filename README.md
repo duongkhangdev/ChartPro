@@ -15,13 +15,8 @@ A professional WinForms trading chart application built with ScottPlot 5 and .NE
   - Horizontal and vertical lines
   - Rectangles
   - Circles
-  - Fibonacci retracement (with extensibility for additional tools)
-- **Shape Management with Undo/Redo**: 
-  - Command pattern implementation for all shape operations
-  - Unlimited undo/redo stack via Ctrl+Z and Ctrl+Y
-  - Shape selection with click (Ctrl+Click for multi-select)
-  - Delete selected shapes with Delete key
-  - Each shape tracked with metadata (ID, visibility, selection state, creation time)
+  - Fibonacci retracement (with all standard levels and price labels)
+  - Fibonacci extension (with projection levels)
 - **Real-Time Updates**: Support for live candle updates via `BindCandles()`, `UpdateLastCandle()`, and `AddCandle()`
 - **Keyboard Shortcuts**: Ctrl+Z (undo), Ctrl+Y/Ctrl+Shift+Z (redo), Delete (delete selected), Esc (cancel drawing)
 - **Memory-Safe**: Proper event handler cleanup to prevent memory leaks
@@ -160,26 +155,32 @@ The project includes a GitHub Actions workflow (`.github/workflows/build-and-rel
 - Creates source code archives
 - Attaches artifacts to releases (on tag push)
 
-## Testing
+## Fibonacci Tools
 
-The project includes a comprehensive unit test suite in the `ChartPro.Tests` project:
+The application includes comprehensive Fibonacci analysis tools:
 
-```bash
-# Run tests (requires Windows with .NET Desktop runtime)
-dotnet test ChartPro.Tests/ChartPro.Tests.csproj
-```
+### Fibonacci Retracement
+- **Levels**: 0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0
+- **Usage**: Draw from swing high to swing low (or vice versa)
+- **Features**: 
+  - Color-coded levels for easy identification
+  - Price labels showing both ratio and actual price value
+  - Real-time preview while drawing
+  - Automatic direction detection (uptrend/downtrend)
 
-Tests cover:
-- ShapeManager operations (add, remove, clear, lookup)
-- Command pattern (execute, undo, redo)
-- DrawnShape metadata and state
-- Undo/redo stack behavior
+### Fibonacci Extension
+- **Levels**: All retracement levels plus 1.272, 1.618, 2.0, 2.618
+- **Usage**: Draw from trend start to trend end to project extension targets
+- **Features**: 
+  - Extended levels for projection targets
+  - Same color-coding and labeling as retracement
+  - Useful for identifying potential profit targets
 
 ## TODO / Future Enhancements
 
 The following features are planned for future implementation:
-- Full Fibonacci retracement with levels (0.236, 0.382, 0.5, 0.618, 0.786)
-- Fibonacci extension tool
+- Customizable Fibonacci levels (show/hide specific levels)
+- Custom level ratios
 - Channel drawing
 - Triangle drawing tool
 - Text annotation tool

@@ -54,13 +54,14 @@ public partial class MainForm : Form
 
         // Create buttons for drawing modes
         var yPos = 10;
-        var btnNone = CreateToolButton("None (ESC)", ChartDrawMode.None, ref yPos, "Cancel drawing and enable pan/zoom");
-        var btnTrendLine = CreateToolButton("Trend Line (1)", ChartDrawMode.TrendLine, ref yPos, "Draw a trend line");
-        var btnHorizontal = CreateToolButton("Horizontal Line (2)", ChartDrawMode.HorizontalLine, ref yPos, "Draw a horizontal price level");
-        var btnVertical = CreateToolButton("Vertical Line (3)", ChartDrawMode.VerticalLine, ref yPos, "Draw a vertical time line");
-        var btnRectangle = CreateToolButton("Rectangle (4)", ChartDrawMode.Rectangle, ref yPos, "Draw a rectangular zone");
-        var btnCircle = CreateToolButton("Circle (5)", ChartDrawMode.Circle, ref yPos, "Draw a circular shape");
-        var btnFibonacci = CreateToolButton("Fibonacci (6)", ChartDrawMode.FibonacciRetracement, ref yPos, "Draw Fibonacci retracement");
+        var btnNone = CreateToolButton("None", ChartDrawMode.None, ref yPos);
+        var btnTrendLine = CreateToolButton("Trend Line", ChartDrawMode.TrendLine, ref yPos);
+        var btnHorizontal = CreateToolButton("Horizontal Line", ChartDrawMode.HorizontalLine, ref yPos);
+        var btnVertical = CreateToolButton("Vertical Line", ChartDrawMode.VerticalLine, ref yPos);
+        var btnRectangle = CreateToolButton("Rectangle", ChartDrawMode.Rectangle, ref yPos);
+        var btnCircle = CreateToolButton("Circle", ChartDrawMode.Circle, ref yPos);
+        var btnFibonacci = CreateToolButton("Fib Retracement", ChartDrawMode.FibonacciRetracement, ref yPos);
+        var btnFibExtension = CreateToolButton("Fib Extension", ChartDrawMode.FibonacciExtension, ref yPos);
 
         yPos += 20;
         
@@ -167,11 +168,7 @@ public partial class MainForm : Form
         toolbarPanel.Controls.Add(btnRectangle);
         toolbarPanel.Controls.Add(btnCircle);
         toolbarPanel.Controls.Add(btnFibonacci);
-        toolbarPanel.Controls.Add(snapLabel);
-        toolbarPanel.Controls.Add(chkSnapEnabled);
-        toolbarPanel.Controls.Add(rbSnapNone);
-        toolbarPanel.Controls.Add(rbSnapPrice);
-        toolbarPanel.Controls.Add(rbSnapCandle);
+        toolbarPanel.Controls.Add(btnFibExtension);
         toolbarPanel.Controls.Add(btnGenerateSampleData);
         toolbarPanel.Controls.Add(btnSaveAnnotations);
         toolbarPanel.Controls.Add(btnLoadAnnotations);
