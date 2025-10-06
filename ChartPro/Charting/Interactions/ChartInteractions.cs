@@ -1,3 +1,5 @@
+using ChartPro.Charting.Commands;
+using ChartPro.Charting.Shapes;
 using ScottPlot;
 using ScottPlot.WinForms;
 using System.Drawing;
@@ -25,14 +27,17 @@ public class ChartInteractions : IChartInteractions
     private Coordinates? _currentMouseCoordinates;
     private string? _currentShapeInfo;
 
+    // Shape management
+    private readonly IShapeManager _shapeManager;
+
     public ChartDrawMode CurrentDrawMode => _currentDrawMode;
     public bool IsAttached => _isAttached;
-    public Coordinates? CurrentMouseCoordinates => _currentMouseCoordinates;
-    public string? CurrentShapeInfo => _currentShapeInfo;
+    public IShapeManager ShapeManager => _shapeManager;
 
-    public event EventHandler<ChartDrawMode>? DrawModeChanged;
-    public event EventHandler<Coordinates>? MouseCoordinatesChanged;
-    public event EventHandler<string>? ShapeInfoChanged;
+    public ChartInteractions()
+    {
+        _shapeManager = new ShapeManager();
+    }
 
     /// <summary>
     /// Attaches the interaction service to a FormsPlot control.
@@ -166,8 +171,18 @@ public class ChartInteractions : IChartInteractions
 
     private void OnMouseDown(object? sender, MouseEventArgs e)
     {
-        if (_formsPlot == null || _currentDrawMode == ChartDrawMode.None)
+        if (_formsPlot == null)
             return;
+
+        if (_currentDrawMode == ChartDrawMode.None)
+        {
+            // Selection mode - try to select a shape
+            if (e.Button == MouseButtons.Left)
+            {
+                HandleShapeSelection(e.X, e.Y, Control.ModifierKeys);
+            }
+            return;
+        }
 
         if (e.Button == MouseButtons.Left)
         {
@@ -310,8 +325,10 @@ public class ChartInteractions : IChartInteractions
         var strategy = DrawModeStrategyFactory.CreateStrategy(_currentDrawMode);
         if (strategy != null)
         {
-            var plottable = strategy.CreateFinal(start, end, _formsPlot.Plot);
-            _formsPlot.Plot.Add.Plottable(plottable);
+            // Create a DrawnShape and add it via command pattern
+            var shape = new DrawnShape(plottable, _currentDrawMode);
+            var command = new AddShapeCommand(_shapeManager, shape, _formsPlot.Plot);
+            _shapeManager.ExecuteCommand(command);
             _formsPlot.Refresh();
         }
     }
@@ -438,6 +455,166 @@ public class ChartInteractions : IChartInteractions
         }
 
         _formsPlot.Refresh();
+    }
+
+    #endregion
+
+    #region Shape Selection
+
+    private void HandleShapeSelection(int pixelX, int pixelY, Keys modifiers)
+    {
+        if (_formsPlot == null)
+            return;
+
+        var coordinates = _formsPlot.Plot.GetCoordinates(pixelX, pixelY);
+        var clickedShape = FindShapeNearPoint(coordinates, pixelX, pixelY);
+
+        bool isCtrlPressed = modifiers.HasFlag(Keys.Control);
+
+        if (clickedShape != null)
+        {
+            // If Ctrl is not pressed, deselect all other shapes
+            if (!isCtrlPressed)
+            {
+                foreach (var shape in _shapeManager.Shapes)
+                {
+                    if (shape != clickedShape)
+                    {
+                        shape.IsSelected = false;
+                    }
+                }
+            }
+
+            // Toggle selection of clicked shape
+            clickedShape.IsSelected = !clickedShape.IsSelected;
+        }
+        else if (!isCtrlPressed)
+        {
+            // Clicked on empty area without Ctrl - deselect all
+            foreach (var shape in _shapeManager.Shapes)
+            {
+                shape.IsSelected = false;
+            }
+        }
+
+        // Update visual appearance and refresh
+        UpdateShapeVisuals();
+        _formsPlot.Refresh();
+    }
+
+    private DrawnShape? FindShapeNearPoint(Coordinates coordinates, int pixelX, int pixelY)
+    {
+        if (_formsPlot == null)
+            return null;
+
+        const double SELECTION_TOLERANCE = 10.0; // pixels
+
+        // Check shapes in reverse order (most recently added first)
+        for (int i = _shapeManager.Shapes.Count - 1; i >= 0; i--)
+        {
+            var shape = _shapeManager.Shapes[i];
+            if (!shape.IsVisible)
+                continue;
+
+            // Simple distance-based selection
+            // For more complex shapes, this could be improved with actual geometry tests
+            if (IsPointNearPlottable(shape.Plottable, coordinates, pixelX, pixelY, SELECTION_TOLERANCE))
+            {
+                return shape;
+            }
+        }
+
+        return null;
+    }
+
+    private bool IsPointNearPlottable(IPlottable plottable, Coordinates coordinates, int pixelX, int pixelY, double tolerance)
+    {
+        // This is a simplified implementation
+        // In a production system, you'd want more sophisticated hit testing based on plottable type
+        
+        // For now, use the plottable's axis limits as a rough bounding box
+        try
+        {
+            var bounds = plottable.GetAxisLimits();
+            
+            // Expand bounds slightly for easier selection
+            double margin = (bounds.Rect.Width + bounds.Rect.Height) * 0.02; // 2% margin
+            
+            return coordinates.X >= bounds.Rect.Left - margin &&
+                   coordinates.X <= bounds.Rect.Right + margin &&
+                   coordinates.Y >= bounds.Rect.Bottom - margin &&
+                   coordinates.Y <= bounds.Rect.Top + margin;
+        }
+        catch
+        {
+            // If we can't get bounds, skip this plottable
+            return false;
+        }
+    }
+
+    private void UpdateShapeVisuals()
+    {
+        foreach (var shape in _shapeManager.Shapes)
+        {
+            // Update visual appearance based on selection state
+            // This is a basic implementation - you could enhance it with different colors, line widths, etc.
+            try
+            {
+                // Try to access common line properties
+                if (shape.Plottable is IHasLine linePlottable)
+                {
+                    // Make selected shapes more prominent
+                    linePlottable.LineWidth = shape.IsSelected ? 3 : 2;
+                }
+            }
+            catch
+            {
+                // Some plottables might not support these properties
+            }
+        }
+    }
+
+    #endregion
+
+    #region Undo/Redo/Delete Operations
+
+    public bool Undo()
+    {
+        if (!_shapeManager.CanUndo)
+            return false;
+
+        var result = _shapeManager.Undo();
+        _formsPlot?.Refresh();
+        return result;
+    }
+
+    public bool Redo()
+    {
+        if (!_shapeManager.CanRedo)
+            return false;
+
+        var result = _shapeManager.Redo();
+        _formsPlot?.Refresh();
+        return result;
+    }
+
+    public void DeleteSelectedShapes()
+    {
+        if (_formsPlot == null)
+            return;
+
+        var selectedShapes = _shapeManager.Shapes.Where(s => s.IsSelected).ToList();
+        
+        foreach (var shape in selectedShapes)
+        {
+            var command = new DeleteShapeCommand(_shapeManager, shape, _formsPlot.Plot);
+            _shapeManager.ExecuteCommand(command);
+        }
+
+        if (selectedShapes.Any())
+        {
+            _formsPlot.Refresh();
+        }
     }
 
     #endregion

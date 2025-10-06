@@ -1,3 +1,4 @@
+using ChartPro.Charting.Shapes;
 using ScottPlot;
 using ScottPlot.WinForms;
 
@@ -61,27 +62,22 @@ public interface IChartInteractions : IDisposable
     bool IsAttached { get; }
 
     /// <summary>
-    /// Gets the current mouse coordinates.
+    /// Gets the shape manager for this chart.
     /// </summary>
-    Coordinates? CurrentMouseCoordinates { get; }
+    IShapeManager ShapeManager { get; }
 
     /// <summary>
-    /// Gets the current shape info (length, angle, size).
+    /// Undoes the last shape operation.
     /// </summary>
-    string? CurrentShapeInfo { get; }
+    bool Undo();
 
     /// <summary>
-    /// Event fired when the drawing mode changes.
+    /// Redoes the last undone shape operation.
     /// </summary>
-    event EventHandler<ChartDrawMode>? DrawModeChanged;
+    bool Redo();
 
     /// <summary>
-    /// Event fired when mouse coordinates change.
+    /// Deletes the currently selected shapes.
     /// </summary>
-    event EventHandler<Coordinates>? MouseCoordinatesChanged;
-
-    /// <summary>
-    /// Event fired when shape info changes.
-    /// </summary>
-    event EventHandler<string>? ShapeInfoChanged;
+    void DeleteSelectedShapes();
 }

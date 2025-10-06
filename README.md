@@ -12,12 +12,17 @@ A professional WinForms trading chart application built with ScottPlot 5 and .NE
   - Rectangles
   - Circles
   - Fibonacci retracement (with extensibility for additional tools)
-- **Keyboard Shortcuts**: Fast tool switching with number keys (1-6) and ESC to cancel
-- **Status Bar**: Real-time display of drawing mode, coordinates, and shape parameters
-- **Tooltips**: Helpful descriptions on all toolbar buttons
+- **Shape Management with Undo/Redo**: 
+  - Command pattern implementation for all shape operations
+  - Unlimited undo/redo stack via Ctrl+Z and Ctrl+Y
+  - Shape selection with click (Ctrl+Click for multi-select)
+  - Delete selected shapes with Delete key
+  - Each shape tracked with metadata (ID, visibility, selection state, creation time)
 - **Real-Time Updates**: Support for live candle updates via `BindCandles()`, `UpdateLastCandle()`, and `AddCandle()`
+- **Keyboard Shortcuts**: Ctrl+Z (undo), Ctrl+Y/Ctrl+Shift+Z (redo), Delete (delete selected), Esc (cancel drawing)
 - **Memory-Safe**: Proper event handler cleanup to prevent memory leaks
 - **ScottPlot 5 Integration**: Built on the latest ScottPlot 5 for high-performance charting
+- **Unit Tests**: Comprehensive test coverage for ShapeManager, Commands, and DrawnShape classes
 
 ## Architecture
 
@@ -34,8 +39,14 @@ For detailed architecture documentation, see:
 ChartPro/
 ├── Charting/
 │   ├── ChartDrawMode.cs              # Drawing mode enumeration
-│   ├── Models/
-│   │   └── ShapeAnnotation.cs        # Data models for shape serialization
+│   ├── Commands/
+│   │   ├── ICommand.cs               # Command pattern interface
+│   │   ├── AddShapeCommand.cs        # Command to add a shape
+│   │   └── DeleteShapeCommand.cs     # Command to delete a shape
+│   ├── Shapes/
+│   │   ├── DrawnShape.cs             # Shape wrapper with metadata
+│   │   ├── IShapeManager.cs          # Shape manager interface
+│   │   └── ShapeManager.cs           # Shape manager implementation
 │   └── Interactions/
 │       ├── IChartInteractions.cs     # Chart interactions interface
 │       ├── ChartInteractions.cs      # DI-based service implementation
@@ -52,14 +63,9 @@ ChartPro/
 └── Program.cs                         # Application entry point with DI setup
 
 ChartPro.Tests/                        # Unit test project
-└── Strategies/                        # Strategy tests
-    ├── TrendLineStrategyTests.cs
-    ├── HorizontalLineStrategyTests.cs
-    ├── VerticalLineStrategyTests.cs
-    ├── RectangleStrategyTests.cs
-    ├── CircleStrategyTests.cs
-    ├── FibonacciRetracementStrategyTests.cs
-    └── DrawModeStrategyFactoryTests.cs
+├── ShapeManagerTests.cs               # Tests for ShapeManager
+├── CommandTests.cs                    # Tests for Command pattern
+└── DrawnShapeTests.cs                 # Tests for DrawnShape
 ```
 
 ### Key Components
@@ -68,29 +74,37 @@ ChartPro.Tests/                        # Unit test project
    - `Attach()`: Attaches to a FormsPlot control
    - `SetDrawMode()`: Changes drawing mode
    - `BindCandles()`, `UpdateLastCandle()`, `AddCandle()`: Real-time data management
-   - `SaveShapesToFile()`, `LoadShapesFromFile()`: Persistence operations
+   - `Undo()`, `Redo()`: Undo/redo operations
+   - `DeleteSelectedShapes()`: Deletes currently selected shapes
    - Implements `IDisposable` for proper cleanup
 
 2. **ChartInteractions**: Service implementation
    - Handles mouse events (MouseDown, MouseMove, MouseUp)
    - Uses strategy pattern to delegate drawing logic to mode-specific strategies
    - Manages shape previews during drawing
-   - Finalizes shapes on mouse release
-   - Tracks drawn shapes with metadata for persistence
+   - Finalizes shapes on mouse release via Command pattern
+   - Shape selection support (click to select, Ctrl+Click for multi-select)
    - Safely unhooks event handlers on disposal
 
-3. **ShapeAnnotation**: Data model for serializing shapes
-   - Stores shape type, coordinates, colors, and styles
-   - Enables JSON serialization/deserialization
+3. **ShapeManager**: Centralized shape and command management
+   - Tracks all drawn shapes with metadata
+   - Maintains undo/redo command stacks
+   - Provides shape lookup by ID
+   - Supports shape addition/removal
 
-4. **Program.cs**: DI Container Setup
+4. **Command Pattern**: Implements undo/redo for all operations
+   - `AddShapeCommand`: Adds a shape (can be undone)
+   - `DeleteShapeCommand`: Deletes a shape (can be undone)
+   - Commands are executed through ShapeManager
+
+5. **Program.cs**: DI Container Setup
    - Registers `IChartInteractions` service
    - Configures application startup
 
-5. **MainForm**: UI with integrated service
+6. **MainForm**: UI with integrated service
    - Receives `IChartInteractions` via constructor injection
    - Provides toolbar for drawing mode selection
-   - Includes Save/Load buttons for annotation persistence
+   - Keyboard shortcuts for undo/redo/delete operations
    - Demonstrates sample data generation
 
 6. **Unit Tests**: Comprehensive test coverage
@@ -138,12 +152,36 @@ dotnet run --project ChartPro/ChartPro.csproj
    - Shape parameters (length, angle, size) during drawing
 7. Pan/zoom is disabled during drawing, enabled otherwise
 
+### Shape Management
+
+- **Select shapes**: Click on a shape when in "None" mode to select it
+- **Multi-select**: Hold Ctrl and click to select multiple shapes
+- **Delete**: Press Delete key to remove selected shapes
+- **Undo**: Press Ctrl+Z to undo the last operation
+- **Redo**: Press Ctrl+Y or Ctrl+Shift+Z to redo
+- **Cancel drawing**: Press Esc to cancel the current drawing mode
+
 ## CI/CD
 
 The project includes a GitHub Actions workflow (`.github/workflows/build-and-release.yml`) that:
 - Builds the project on Windows runners
 - Creates source code archives
 - Attaches artifacts to releases (on tag push)
+
+## Testing
+
+The project includes a comprehensive unit test suite in the `ChartPro.Tests` project:
+
+```bash
+# Run tests (requires Windows with .NET Desktop runtime)
+dotnet test ChartPro.Tests/ChartPro.Tests.csproj
+```
+
+Tests cover:
+- ShapeManager operations (add, remove, clear, lookup)
+- Command pattern (execute, undo, redo)
+- DrawnShape metadata and state
+- Undo/redo stack behavior
 
 ## TODO / Future Enhancements
 
@@ -153,7 +191,9 @@ The following features are planned for future implementation:
 - Channel drawing
 - Triangle drawing tool
 - Text annotation tool
-- Shape editing and deletion
+- Shape move and resize operations
+- Improved shape selection with visual feedback (highlighted outlines)
+- Persistence of drawn shapes (save/load to file)
 - Additional technical indicators
 
 ## License
