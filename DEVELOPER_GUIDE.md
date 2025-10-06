@@ -232,6 +232,31 @@ public interface IChartInteractions : IDisposable
 }
 ```
 
+### Working with Snap/Magnet
+
+The snap feature helps users draw more accurately by snapping coordinates to predefined points:
+
+```csharp
+// Enable snap functionality
+_chartInteractions.SnapEnabled = true;
+
+// Set snap mode
+_chartInteractions.SnapMode = SnapMode.Price; // or SnapMode.CandleOHLC
+
+// Snap can also be temporarily enabled by holding Shift key
+```
+
+**Snap Modes**:
+- `SnapMode.None` - No snapping (default)
+- `SnapMode.Price` - Snaps to rounded price levels with dynamic grid sizing
+- `SnapMode.CandleOHLC` - Snaps to nearest candle's Open, High, Low, or Close values
+
+**Implementation Details**:
+- Snap logic is applied in mouse event handlers before creating shapes
+- Price grid size is dynamically calculated based on visible range
+- Candle snapping finds the nearest candle by time, then the closest OHLC value
+- Shift key state is tracked via KeyDown/KeyUp events
+
 ## Architecture Patterns
 
 ### Dependency Injection

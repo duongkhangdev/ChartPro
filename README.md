@@ -12,6 +12,10 @@ A professional WinForms trading chart application built with ScottPlot 5 and .NE
   - Rectangles
   - Circles
   - Fibonacci retracement (with extensibility for additional tools)
+- **Snap/Magnet Feature**: Improve drawing accuracy with snap-to-grid and snap-to-candle functionality
+  - Snap to price grid (rounded price levels)
+  - Snap to candle OHLC values
+  - Toggle via UI or hold Shift key
 - **Real-Time Updates**: Support for live candle updates via `BindCandles()`, `UpdateLastCandle()`, and `AddCandle()`
 - **Memory-Safe**: Proper event handler cleanup to prevent memory leaks
 - **ScottPlot 5 Integration**: Built on the latest ScottPlot 5 for high-performance charting
@@ -117,9 +121,12 @@ dotnet run --project ChartPro/ChartPro.csproj
 1. Launch the application
 2. Click "Generate Sample Data" to load candlestick data
 3. Select a drawing tool from the right toolbar
-4. Click and drag on the chart to draw
-5. The drawing mode automatically resets to "None" after completing a shape
-6. Pan/zoom is disabled during drawing, enabled otherwise
+4. (Optional) Enable snap/magnet and choose snap mode:
+   - Check "Enable Snap" or hold Shift while drawing
+   - Select snap mode: Price Grid or Candle OHLC
+5. Click and drag on the chart to draw
+6. The drawing mode automatically resets to "None" after completing a shape
+7. Pan/zoom is disabled during drawing, enabled otherwise
 
 ## CI/CD
 
