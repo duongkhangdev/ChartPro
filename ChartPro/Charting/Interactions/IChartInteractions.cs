@@ -61,12 +61,14 @@ public interface IChartInteractions : IDisposable
     bool IsAttached { get; }
 
     /// <summary>
-    /// Enables or disables snap/magnet functionality.
+    /// Saves all drawn shapes to a JSON file.
     /// </summary>
-    bool SnapEnabled { get; set; }
+    /// <param name="filePath">The path to save the JSON file</param>
+    void SaveShapesToFile(string filePath);
 
     /// <summary>
-    /// Gets or sets the snap mode for drawing tools.
+    /// Loads shapes from a JSON file and adds them to the chart.
     /// </summary>
-    SnapMode SnapMode { get; set; }
+    /// <param name="filePath">The path to the JSON file to load</param>
+    void LoadShapesFromFile(string filePath);
 }

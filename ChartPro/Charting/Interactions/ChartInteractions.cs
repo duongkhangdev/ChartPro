@@ -1,7 +1,8 @@
 using ScottPlot;
 using ScottPlot.WinForms;
 using System.Drawing;
-using ChartPro.Charting.Interactions.Strategies;
+using System.Text.Json;
+using ChartPro.Charting.Models;
 
 namespace ChartPro.Charting.Interactions;
 
@@ -21,6 +22,9 @@ public class ChartInteractions : IChartInteractions
     // Drawing state
     private Coordinates? _drawStartCoordinates;
     private IPlottable? _previewPlottable;
+    
+    // Track drawn shapes with their metadata
+    private readonly List<(IPlottable plottable, ShapeAnnotation metadata)> _drawnShapes = new();
 
     // Snap/magnet state
     private bool _snapEnabled = false;
@@ -261,7 +265,14 @@ public class ChartInteractions : IChartInteractions
         double snappedX = coords.X;
         if (_boundCandles != null && _boundCandles.Count > 0)
         {
-            snappedX = SnapToNearestCandleTime(coords.X);
+            // Create metadata for this shape
+            var metadata = CreateShapeMetadata(_currentDrawMode, start, end);
+            
+            // Track the shape
+            _drawnShapes.Add((plottable, metadata));
+            
+            _formsPlot.Plot.Add.Plottable(plottable);
+            _formsPlot.Refresh();
         }
 
         return new Coordinates(snappedX, snappedY);
@@ -387,6 +398,128 @@ public class ChartInteractions : IChartInteractions
     }
 
 
+
+    #endregion
+
+    #region Shape Persistence
+
+    private ShapeAnnotation CreateShapeMetadata(ChartDrawMode drawMode, Coordinates start, Coordinates end)
+    {
+        var metadata = new ShapeAnnotation
+        {
+            ShapeType = drawMode.ToString(),
+            X1 = start.X,
+            Y1 = start.Y,
+            X2 = end.X,
+            Y2 = end.Y
+        };
+
+        // Set colors and styles based on shape type
+        switch (drawMode)
+        {
+            case ChartDrawMode.TrendLine:
+                metadata.LineColor = "#0000FF"; // Blue
+                metadata.LineWidth = 2;
+                break;
+            case ChartDrawMode.HorizontalLine:
+                metadata.LineColor = "#008000"; // Green
+                metadata.LineWidth = 2;
+                break;
+            case ChartDrawMode.VerticalLine:
+                metadata.LineColor = "#FFA500"; // Orange
+                metadata.LineWidth = 2;
+                break;
+            case ChartDrawMode.Rectangle:
+                metadata.LineColor = "#800080"; // Purple
+                metadata.LineWidth = 2;
+                metadata.FillColor = "#800080";
+                metadata.FillAlpha = 25;
+                break;
+            case ChartDrawMode.Circle:
+                metadata.LineColor = "#00FFFF"; // Cyan
+                metadata.LineWidth = 2;
+                metadata.FillColor = "#00FFFF";
+                metadata.FillAlpha = 25;
+                break;
+            case ChartDrawMode.FibonacciRetracement:
+                metadata.LineColor = "#FFD700"; // Gold
+                metadata.LineWidth = 2;
+                break;
+        }
+
+        return metadata;
+    }
+
+    public void SaveShapesToFile(string filePath)
+    {
+        var annotations = new ChartAnnotations
+        {
+            Version = 1,
+            Shapes = _drawnShapes.Select(s => s.metadata).ToList()
+        };
+
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true
+        };
+
+        var json = JsonSerializer.Serialize(annotations, options);
+        File.WriteAllText(filePath, json);
+    }
+
+    public void LoadShapesFromFile(string filePath)
+    {
+        if (_formsPlot == null)
+            throw new InvalidOperationException("Chart is not attached. Call Attach() first.");
+
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException("Annotations file not found.", filePath);
+
+        var json = File.ReadAllText(filePath);
+        var annotations = JsonSerializer.Deserialize<ChartAnnotations>(json);
+
+        if (annotations == null || annotations.Shapes == null)
+            return;
+
+        // Clear existing shapes
+        foreach (var (plottable, _) in _drawnShapes)
+        {
+            _formsPlot.Plot.Remove(plottable);
+        }
+        _drawnShapes.Clear();
+
+        // Load and recreate each shape
+        foreach (var shape in annotations.Shapes)
+        {
+            var start = new Coordinates(shape.X1, shape.Y1);
+            var end = new Coordinates(shape.X2, shape.Y2);
+
+            IPlottable? plottable = null;
+
+            // Parse the shape type and create the appropriate plottable
+            if (Enum.TryParse<ChartDrawMode>(shape.ShapeType, out var drawMode))
+            {
+                plottable = drawMode switch
+                {
+                    ChartDrawMode.TrendLine => CreateTrendLine(start, end),
+                    ChartDrawMode.HorizontalLine => CreateHorizontalLine(start, end),
+                    ChartDrawMode.VerticalLine => CreateVerticalLine(start, end),
+                    ChartDrawMode.Rectangle => CreateRectangle(start, end),
+                    ChartDrawMode.Circle => CreateCircle(start, end),
+                    ChartDrawMode.FibonacciRetracement => CreateFibonacci(start, end),
+                    _ => null
+                };
+
+                if (plottable != null)
+                {
+                    _drawnShapes.Add((plottable, shape));
+                    _formsPlot.Plot.Add.Plottable(plottable);
+                }
+            }
+        }
+
+        _formsPlot.Refresh();
+    }
 
     #endregion
 

@@ -134,6 +134,26 @@ public partial class MainForm : Form
         };
         btnGenerateSampleData.Click += (s, e) => GenerateSampleData();
 
+        yPos += 40;
+        var btnSaveAnnotations = new Button
+        {
+            Text = "Save Annotations",
+            Location = new Point(10, yPos),
+            Width = 180,
+            Height = 30
+        };
+        btnSaveAnnotations.Click += (s, e) => SaveAnnotations();
+
+        yPos += 35;
+        var btnLoadAnnotations = new Button
+        {
+            Text = "Load Annotations",
+            Location = new Point(10, yPos),
+            Width = 180,
+            Height = 30
+        };
+        btnLoadAnnotations.Click += (s, e) => LoadAnnotations();
+
         toolbarPanel.Controls.Add(btnNone);
         toolbarPanel.Controls.Add(btnTrendLine);
         toolbarPanel.Controls.Add(btnHorizontal);
@@ -147,6 +167,8 @@ public partial class MainForm : Form
         toolbarPanel.Controls.Add(rbSnapPrice);
         toolbarPanel.Controls.Add(rbSnapCandle);
         toolbarPanel.Controls.Add(btnGenerateSampleData);
+        toolbarPanel.Controls.Add(btnSaveAnnotations);
+        toolbarPanel.Controls.Add(btnLoadAnnotations);
 
         Controls.Add(_formsPlot);
         Controls.Add(toolbarPanel);
@@ -259,5 +281,52 @@ public partial class MainForm : Form
         }
 
         return candles;
+    }
+
+    private void SaveAnnotations()
+    {
+        using var saveDialog = new SaveFileDialog
+        {
+            Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+            DefaultExt = "json",
+            FileName = "annotations.json",
+            Title = "Save Annotations"
+        };
+
+        if (saveDialog.ShowDialog() == DialogResult.OK)
+        {
+            try
+            {
+                _chartInteractions.SaveShapesToFile(saveDialog.FileName);
+                MessageBox.Show("Annotations saved successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving annotations: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+    }
+
+    private void LoadAnnotations()
+    {
+        using var openDialog = new OpenFileDialog
+        {
+            Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+            DefaultExt = "json",
+            Title = "Load Annotations"
+        };
+
+        if (openDialog.ShowDialog() == DialogResult.OK)
+        {
+            try
+            {
+                _chartInteractions.LoadShapesFromFile(openDialog.FileName);
+                MessageBox.Show("Annotations loaded successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading annotations: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 }
