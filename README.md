@@ -17,11 +17,16 @@ A professional WinForms trading chart application built with ScottPlot 5 and .NE
   - Circles
   - Fibonacci retracement (with all standard levels and price labels)
   - Fibonacci extension (with projection levels)
+- **Save/Load Annotations**: Save all drawn shapes to JSON files and load them later
+  - User-friendly file dialogs for save/load operations
+  - Comprehensive error handling
+  - Support for all shape types with metadata
+  - See [ANNOTATIONS_SAVE_LOAD.md](ANNOTATIONS_SAVE_LOAD.md) for details
 - **Real-Time Updates**: Support for live candle updates via `BindCandles()`, `UpdateLastCandle()`, and `AddCandle()`
 - **Keyboard Shortcuts**: Ctrl+Z (undo), Ctrl+Y/Ctrl+Shift+Z (redo), Delete (delete selected), Esc (cancel drawing)
 - **Memory-Safe**: Proper event handler cleanup to prevent memory leaks
 - **ScottPlot 5 Integration**: Built on the latest ScottPlot 5 for high-performance charting
-- **Unit Tests**: Comprehensive test coverage for Command pattern and ShapeManager
+- **Unit Tests**: Comprehensive test coverage for Command pattern, ShapeManager, and annotation persistence
 
 ## Architecture
 
@@ -172,8 +177,8 @@ The following features are planned for future implementation:
 - Text annotation tool
 - Shape selection for interactive editing (move, resize)
 - Shape deletion via UI (currently only via undo)
-- Persistence of drawn shapes
 - Additional technical indicators
+- Append mode for loading annotations (without clearing existing shapes)
 
 ## License
 
