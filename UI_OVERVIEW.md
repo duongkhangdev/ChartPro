@@ -86,8 +86,10 @@ The ChartPro application features a clean, professional interface designed for t
 - **Snap to Price Grid** - Radio button to snap to rounded price levels
 - **Snap to Candle OHLC** - Radio button to snap to nearest candle's OHLC values
 
-**Special Button**:
+**Special Buttons**:
 - **Generate Sample Data** - Creates 100 random OHLC candles
+- **Save Annotations** - Saves all drawn shapes to a JSON file
+- **Load Annotations** - Loads shapes from a previously saved JSON file
 
 **Button Styling**:
 - **Normal**: SystemColors.Control background
@@ -128,6 +130,21 @@ The ChartPro application features a clean, professional interface designed for t
 - Green candles = close > open
 - Red candles = close < open
 - Auto-scales axes
+
+### Save/Load Annotations
+
+**Click "Save Annotations"**:
+- Opens a file save dialog
+- Default filename: `annotations.json`
+- Saves all drawn shapes with metadata
+- Shows success/error message
+
+**Click "Load Annotations"**:
+- Opens a file open dialog
+- Filters for `.json` files
+- Clears existing shapes and loads new ones
+- Shows success/error message
+- See [ANNOTATIONS_SAVE_LOAD.md](ANNOTATIONS_SAVE_LOAD.md) for details
 
 ### Pan and Zoom
 
