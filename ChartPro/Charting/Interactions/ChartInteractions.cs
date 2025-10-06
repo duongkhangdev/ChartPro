@@ -486,6 +486,7 @@ public class ChartInteractions : IChartInteractions, IDisposable
 
     public void DeleteSelectedShapes()
     {
+        // Optional: implement delete behavior via shape manager if supported
         _formsPlot?.Refresh();
     }
 
