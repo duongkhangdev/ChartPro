@@ -6,7 +6,6 @@ using System.Text.Json;
 using System.Windows.Forms;
 using ChartPro.Charting.Models;
 using ChartPro.Charting.ShapeManagement;
-using ChartPro.Charting.Shapes;
 using ChartPro.Charting.Interactions.Strategies;
 using ScottPlot;
 using ScottPlot.WinForms;
@@ -19,14 +18,15 @@ namespace ChartPro.Charting.Interactions;
 /// </summary>
 public class ChartInteractions : IChartInteractions, IDisposable
 {
-    private readonly ShapeManagement.IShapeManager _shapeManager;
+    private readonly IShapeManager _shapeManager;
     private FormsPlot? _formsPlot;
     private int _pricePlotIndex;
     private ChartDrawMode _currentDrawMode = ChartDrawMode.None;
     private List<OHLC>? _boundCandles;
     private bool _isAttached;
     private bool _disposed;
-    private bool _shiftKeyPressed;
+    private bool _snapEnabled;
+    private SnapMode _snapMode = SnapMode.None;
 
     // Drawing state
     private Coordinates? _drawStartCoordinates;
@@ -37,33 +37,21 @@ public class ChartInteractions : IChartInteractions, IDisposable
     // Persistence state (for save/load)
     private readonly List<(IPlottable Plottable, ShapeAnnotation metadata)> _drawnShapes = new();
 
-    // Snap/Magnet properties
-    private bool _snapEnabled;
-    private SnapMode _snapMode = SnapMode.None;
-
     // Public properties
     public ChartDrawMode CurrentDrawMode => _currentDrawMode;
     public bool IsAttached => _isAttached;
-    public ShapeManagement.IShapeManager ShapeManager => _shapeManager;
+    public IShapeManager ShapeManager => _shapeManager;
     public Coordinates? CurrentMouseCoordinates => _currentMouseCoordinates;
     public string? CurrentShapeInfo => _currentShapeInfo;
-    public bool SnapEnabled 
-    { 
-        get => _snapEnabled || _shiftKeyPressed; 
-        set => _snapEnabled = value; 
-    }
-    public SnapMode SnapMode 
-    { 
-        get => _snapMode; 
-        set => _snapMode = value; 
-    }
+    public bool SnapEnabled { get => _snapEnabled; set => _snapEnabled = value; }
+    public SnapMode SnapMode { get => _snapMode; set => _snapMode = value; }
 
     // Events
     public event EventHandler<ChartDrawMode>? DrawModeChanged;
     public event EventHandler<Coordinates>? MouseCoordinatesChanged;
     public event EventHandler<string>? ShapeInfoChanged;
 
-    public ChartInteractions(ShapeManagement.IShapeManager shapeManager)
+    public ChartInteractions(IShapeManager shapeManager)
     {
         _shapeManager = shapeManager ?? throw new ArgumentNullException(nameof(shapeManager));
     }
@@ -156,14 +144,12 @@ public class ChartInteractions : IChartInteractions, IDisposable
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode == Keys.ShiftKey)
-            _shiftKeyPressed = true;
+        // Reserved for future keyboard shortcuts
     }
 
     private void OnKeyUp(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode == Keys.ShiftKey)
-            _shiftKeyPressed = false;
+        // Reserved for future keyboard shortcuts
     }
 
     private void OnMouseDown(object? sender, MouseEventArgs e)
@@ -173,9 +159,8 @@ public class ChartInteractions : IChartInteractions, IDisposable
 
         if (_currentDrawMode == ChartDrawMode.None)
         {
-            // TODO: Implement shape selection
-            // if (e.Button == MouseButtons.Left)
-            //     HandleShapeSelection(e.X, e.Y, Control.ModifierKeys);
+            if (e.Button == MouseButtons.Left)
+                HandleShapeSelection(e.X, e.Y, Control.ModifierKeys);
             return;
         }
 
@@ -423,44 +408,16 @@ public class ChartInteractions : IChartInteractions, IDisposable
 
     #endregion
 
-    #region Shape Selection (TODO: Implement shape selection with current ShapeManager interface)
+    #region Shape Selection
 
-    // private void HandleShapeSelection(int pixelX, int pixelY, Keys modifiers)
-    // {
-    //     // TODO: Implement shape selection compatible with ShapeManagement.IShapeManager
-    //     if (_formsPlot == null)
-    //         return;
-    //
-    //     // For now, shape selection is disabled
-    //     _formsPlot.Refresh();
-    // }
+    private void HandleShapeSelection(int pixelX, int pixelY, Keys modifiers)
+    {
+        // TODO: Implement shape selection functionality
+        // This requires extending IPlottable or wrapping shapes with metadata
+        // For now, shape selection is not implemented
+    }
 
     #endregion
-
-    // TODO: Implement shape selection helper methods
-    // private bool IsPointNearPlottable(IPlottable plottable, Coordinates coordinates, double tolerance)
-    // {
-    //     try
-    //     {
-    //         var bounds = plottable.GetAxisLimits();
-    //
-    //         double margin = (bounds.Rect.Width + bounds.Rect.Height) * 0.02;
-    //
-    //         return coordinates.X >= bounds.Rect.Left - margin - tolerance &&
-    //                coordinates.X <= bounds.Rect.Right + margin + tolerance &&
-    //                coordinates.Y >= bounds.Rect.Bottom - margin - tolerance &&
-    //                coordinates.Y <= bounds.Rect.Top + margin + tolerance;
-    //     }
-    //     catch
-    //     {
-    //         return false;
-    //     }
-    // }
-    //
-    // private void UpdateShapeVisuals()
-    // {
-    //     // Optional: styling for selected shapes
-    // }
 
     #region Undo/Redo/Delete Operations
 
