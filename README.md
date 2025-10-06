@@ -19,6 +19,13 @@ A professional WinForms trading chart application built with ScottPlot 5 and .NE
 
 ## Architecture
 
+ChartPro uses **Strategy and Factory patterns** for extensible drawing modes. Each draw mode is implemented as a separate strategy class, making it easy to add new tools without modifying existing code.
+
+For detailed architecture documentation, see:
+- [STRATEGY_PATTERN.md](STRATEGY_PATTERN.md) - Strategy/Factory pattern architecture
+- [IMPLEMENTATION.md](IMPLEMENTATION.md) - Implementation details
+- [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) - Developer guidelines
+
 ### Project Structure
 
 ```
@@ -29,9 +36,28 @@ ChartPro/
 │   │   └── ShapeAnnotation.cs        # Data models for shape serialization
 │   └── Interactions/
 │       ├── IChartInteractions.cs     # Chart interactions interface
-│       └── ChartInteractions.cs      # DI-based service implementation
+│       ├── ChartInteractions.cs      # DI-based service implementation
+│       └── Strategies/               # Strategy pattern for draw modes
+│           ├── IDrawModeStrategy.cs          # Strategy interface
+│           ├── DrawModeStrategyFactory.cs    # Factory for creating strategies
+│           ├── TrendLineStrategy.cs          # Trend line implementation
+│           ├── HorizontalLineStrategy.cs     # Horizontal line implementation
+│           ├── VerticalLineStrategy.cs       # Vertical line implementation
+│           ├── RectangleStrategy.cs          # Rectangle implementation
+│           ├── CircleStrategy.cs             # Circle/ellipse implementation
+│           └── FibonacciRetracementStrategy.cs # Fibonacci implementation
 ├── MainForm.cs                        # Main application form with FormsPlot control
 └── Program.cs                         # Application entry point with DI setup
+
+ChartPro.Tests/                        # Unit test project
+└── Strategies/                        # Strategy tests
+    ├── TrendLineStrategyTests.cs
+    ├── HorizontalLineStrategyTests.cs
+    ├── VerticalLineStrategyTests.cs
+    ├── RectangleStrategyTests.cs
+    ├── CircleStrategyTests.cs
+    ├── FibonacciRetracementStrategyTests.cs
+    └── DrawModeStrategyFactoryTests.cs
 ```
 
 ### Key Components
@@ -45,6 +71,7 @@ ChartPro/
 
 2. **ChartInteractions**: Service implementation
    - Handles mouse events (MouseDown, MouseMove, MouseUp)
+   - Uses strategy pattern to delegate drawing logic to mode-specific strategies
    - Manages shape previews during drawing
    - Finalizes shapes on mouse release
    - Tracks drawn shapes with metadata for persistence
@@ -63,6 +90,11 @@ ChartPro/
    - Provides toolbar for drawing mode selection
    - Includes Save/Load buttons for annotation persistence
    - Demonstrates sample data generation
+
+6. **Unit Tests**: Comprehensive test coverage
+   - Individual strategy tests validate each draw mode
+   - Factory tests ensure correct strategy instantiation
+   - Tests run on Windows with WinForms support
 
 ## Building
 
@@ -89,9 +121,12 @@ dotnet run --project ChartPro/ChartPro.csproj
 1. Launch the application
 2. Click "Generate Sample Data" to load candlestick data
 3. Select a drawing tool from the right toolbar
-4. Click and drag on the chart to draw
-5. The drawing mode automatically resets to "None" after completing a shape
-6. Pan/zoom is disabled during drawing, enabled otherwise
+4. (Optional) Enable snap/magnet and choose snap mode:
+   - Check "Enable Snap" or hold Shift while drawing
+   - Select snap mode: Price Grid or Candle OHLC
+5. Click and drag on the chart to draw
+6. The drawing mode automatically resets to "None" after completing a shape
+7. Pan/zoom is disabled during drawing, enabled otherwise
 
 ### Saving and Loading Annotations
 

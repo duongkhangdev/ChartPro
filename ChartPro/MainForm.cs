@@ -57,6 +57,74 @@ public partial class MainForm : Form
         var btnFibonacci = CreateToolButton("Fibonacci", ChartDrawMode.FibonacciRetracement, ref yPos);
 
         yPos += 20;
+        
+        // Add snap controls section
+        var snapLabel = new System.Windows.Forms.Label
+        {
+            Text = "Snap/Magnet:",
+            Location = new Point(10, yPos),
+            Width = 180,
+            Height = 20,
+            Font = new Font(Font, System.Drawing.FontStyle.Bold)
+        };
+        yPos += 25;
+        
+        var chkSnapEnabled = new CheckBox
+        {
+            Text = "Enable Snap (or hold Shift)",
+            Location = new Point(10, yPos),
+            Width = 180,
+            Height = 20
+        };
+        chkSnapEnabled.CheckedChanged += (s, e) => 
+        {
+            _chartInteractions.SnapEnabled = chkSnapEnabled.Checked;
+        };
+        yPos += 25;
+        
+        var rbSnapNone = new RadioButton
+        {
+            Text = "No Snap",
+            Location = new Point(10, yPos),
+            Width = 180,
+            Height = 20,
+            Checked = true
+        };
+        rbSnapNone.CheckedChanged += (s, e) => 
+        {
+            if (rbSnapNone.Checked)
+                _chartInteractions.SnapMode = SnapMode.None;
+        };
+        yPos += 25;
+        
+        var rbSnapPrice = new RadioButton
+        {
+            Text = "Snap to Price Grid",
+            Location = new Point(10, yPos),
+            Width = 180,
+            Height = 20
+        };
+        rbSnapPrice.CheckedChanged += (s, e) => 
+        {
+            if (rbSnapPrice.Checked)
+                _chartInteractions.SnapMode = SnapMode.Price;
+        };
+        yPos += 25;
+        
+        var rbSnapCandle = new RadioButton
+        {
+            Text = "Snap to Candle OHLC",
+            Location = new Point(10, yPos),
+            Width = 180,
+            Height = 20
+        };
+        rbSnapCandle.CheckedChanged += (s, e) => 
+        {
+            if (rbSnapCandle.Checked)
+                _chartInteractions.SnapMode = SnapMode.CandleOHLC;
+        };
+        yPos += 35;
+
         var btnGenerateSampleData = new Button
         {
             Text = "Generate Sample Data",
@@ -93,6 +161,11 @@ public partial class MainForm : Form
         toolbarPanel.Controls.Add(btnRectangle);
         toolbarPanel.Controls.Add(btnCircle);
         toolbarPanel.Controls.Add(btnFibonacci);
+        toolbarPanel.Controls.Add(snapLabel);
+        toolbarPanel.Controls.Add(chkSnapEnabled);
+        toolbarPanel.Controls.Add(rbSnapNone);
+        toolbarPanel.Controls.Add(rbSnapPrice);
+        toolbarPanel.Controls.Add(rbSnapCandle);
         toolbarPanel.Controls.Add(btnGenerateSampleData);
         toolbarPanel.Controls.Add(btnSaveAnnotations);
         toolbarPanel.Controls.Add(btnLoadAnnotations);
