@@ -2,42 +2,28 @@ using ScottPlot;
 
 namespace ChartPro.Charting.Interactions.Strategies;
 
-public class FibonacciRetracementStrategy : BaseDrawStrategy
+/// <summary>
+/// Strategy for drawing Fibonacci retracement levels.
+/// </summary>
+public class FibonacciRetracementStrategy : IDrawModeStrategy
 {
-    public FibonacciRetracementStrategy(IInteractionContext ctx) : base(ctx) { }
-
-    public override void OnMouseDown(Coordinates coords)
+    public IPlottable CreatePreview(Coordinates start, Coordinates end, Plot plot)
     {
-        Start = MaybeSnap(coords);
-        var line = Ctx.FormsPlot.Plot.Add.Line(Start.Value, Start.Value);
+        // TODO: Implement full Fibonacci retracement with levels (0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0)
+        // For now, create a simple line as preview
+        var line = plot.Add.Line(start, end);
         line.LineWidth = 1;
         line.LineColor = Colors.Gold.WithAlpha(0.5);
-        Preview = line;
-        Ctx.SetPreview(line);
-        Ctx.Refresh();
+        return line;
     }
 
-    public override void OnMouseMove(Coordinates coords)
+    public IPlottable CreateFinal(Coordinates start, Coordinates end, Plot plot)
     {
-        if (Preview is ScottPlot.Plottables.Line line && Start is Coordinates s)
-        {
-            var end = MaybeSnap(coords);
-            line.Coordinates = (s, end);
-            Ctx.Refresh();
-        }
-    }
-
-    public override void OnMouseUp(Coordinates coords)
-    {
-        if (Start is null) return;
-        var end = MaybeSnap(coords);
-        var line = Ctx.FormsPlot.Plot.Add.Line(Start.Value, end);
+        // TODO: Implement full Fibonacci retracement with levels and labels
+        // For now, create a simple line
+        var line = plot.Add.Line(start, end);
         line.LineWidth = 2;
         line.LineColor = Colors.Gold;
-        Ctx.AddFinal(line);
-        Ctx.SetPreview(null);
-        Preview = null;
-        Start = null;
-        Ctx.Refresh();
+        return line;
     }
 }

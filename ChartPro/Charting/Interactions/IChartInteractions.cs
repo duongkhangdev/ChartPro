@@ -1,5 +1,7 @@
+using ChartPro.Charting.Shapes;
 using ScottPlot;
 using ScottPlot.WinForms;
+using ChartPro.Charting.ShapeManagement;
 
 namespace ChartPro.Charting.Interactions;
 
@@ -61,12 +63,7 @@ public interface IChartInteractions : IDisposable
     bool IsAttached { get; }
 
     /// <summary>
-    /// Enables or disables snap/magnet functionality.
+    /// Gets the shape manager instance.
     /// </summary>
-    bool SnapEnabled { get; set; }
-
-    /// <summary>
-    /// Gets or sets the snap mode for drawing tools.
-    /// </summary>
-    SnapMode SnapMode { get; set; }
+    IShapeManager ShapeManager { get; }
 }

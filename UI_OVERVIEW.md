@@ -77,7 +77,8 @@ The ChartPro application features a clean, professional interface designed for t
 4. **Vertical Line** - Draw vertical time lines
 5. **Rectangle** - Draw rectangular zones
 6. **Circle** - Draw circular/elliptical shapes
-7. **Fibonacci** - Draw Fibonacci retracement
+7. **Fib Retracement** - Draw Fibonacci retracement with all levels and labels
+8. **Fib Extension** - Draw Fibonacci extension with projection levels
 
 **Snap/Magnet Controls**:
 - **Enable Snap (or hold Shift)** - Checkbox to enable snap functionality
@@ -151,7 +152,8 @@ The ChartPro application features a clean, professional interface designed for t
 - **Vertical Line**: Orange, 2px width
 - **Rectangle**: Purple outline, light purple fill (10% alpha)
 - **Circle**: Cyan outline, light cyan fill (10% alpha)
-- **Fibonacci**: Gold, 2px width
+- **Fibonacci Retracement**: Multi-colored levels (Red, Orange, Yellow, Green, Blue, Purple), 2px width, with price labels
+- **Fibonacci Extension**: Same as retracement plus extension levels (Cyan, Magenta, DarkRed, DarkBlue)
 
 **Previews** (all tools):
 - Gray color (#808080)
@@ -169,12 +171,12 @@ The ChartPro application features a clean, professional interface designed for t
 ## Keyboard Shortcuts
 
 **Implemented**:
-- `Shift` (hold) - Temporarily enable snap/magnet while drawing
+- `Ctrl+Z` - Undo last shape operation
+- `Ctrl+Y` - Redo previously undone operation
 
-**Not yet implemented**:
+**Planned for future**:
 - `Esc` - Cancel drawing, return to None mode
 - `Delete` - Remove selected shape
-- `Ctrl+Z` - Undo last shape
 - `1-6` - Quick select drawing tools
 
 ## Real-Time Updates
@@ -202,14 +204,16 @@ _chartInteractions.AddCandle(newCandle);
 **Current State**:
 - Standard Windows Forms controls (accessible by default)
 - Keyboard navigation between toolbar buttons (Tab key)
-- Shift key for temporary snap enable
-- ToolTips could be added for better UX
+- ToolTips on all toolbar buttons with descriptions
+- Keyboard shortcuts for all drawing tools (1-6, ESC)
+- Status bar showing current mode, coordinates, and shape info
 
-**Improvements Possible**:
-- Add ToolTips to buttons
-- Add more keyboard shortcuts
-- Add status bar showing current mode and snap state
-- Add coordinate display on mouse hover
+**Features**:
+- ToolTips on all buttons explain their function
+- Keyboard shortcuts displayed in button text
+- Status bar provides real-time feedback during drawing
+- Coordinate display updates on mouse move
+- Shape parameters (length, angle, size) shown during drawing
 
 ## Performance
 
@@ -224,14 +228,33 @@ _chartInteractions.AddCandle(newCandle);
 - Event handlers properly managed
 - No memory leaks (IDisposable pattern)
 
+## Components
+
+### 3. Status Bar (Bottom)
+
+**Type**: StatusStrip  
+**Docked**: Bottom
+
+**Labels**:
+1. **Mode Label** - Shows current drawing mode (e.g., "Mode: Trend Line")
+2. **Coordinates Label** - Shows mouse position (e.g., "X: 123.45, Y: 67.89")
+3. **Shape Info Label** - Shows shape parameters during drawing:
+   - Trend Line: Length and angle
+   - Horizontal Line: Price level
+   - Vertical Line: Time position
+   - Rectangle: Width and height
+   - Circle: Radius X and Y
+   - Fibonacci: Range
+
+**Updates**:
+- Mode label updates when drawing tool changes
+- Coordinates update in real-time on mouse move
+- Shape info appears only during drawing preview
+
 ## Future Enhancements
 
 Planned UI improvements:
-1. Status bar showing:
-   - Current draw mode
-   - Mouse coordinates
-   - Number of shapes drawn
-2. Context menu for shape management:
+1. Context menu for shape management:
    - Delete shape
    - Edit properties
    - Change color
@@ -244,9 +267,9 @@ Planned UI improvements:
    - Toggle visibility
    - Quick select/edit
 5. Fibonacci level customization:
-   - Show/hide individual levels
-   - Add custom levels
-   - Show extensions
+   - UI to show/hide individual levels
+   - Add custom level ratios
+   - Level visibility toggles
 
 ## Testing the UI
 

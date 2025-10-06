@@ -1,6 +1,9 @@
+using ChartPro.Charting.Commands;
+using ChartPro.Charting.Shapes;
 using ScottPlot;
 using ScottPlot.WinForms;
 using System.Drawing;
+using ChartPro.Charting.ShapeManagement;
 
 namespace ChartPro.Charting.Interactions;
 
@@ -10,6 +13,7 @@ namespace ChartPro.Charting.Interactions;
 /// </summary>
 public class ChartInteractions : IChartInteractions
 {
+    private readonly IShapeManager _shapeManager;
     private FormsPlot? _formsPlot;
     private int _pricePlotIndex;
     private ChartDrawMode _currentDrawMode = ChartDrawMode.None;
@@ -20,23 +24,19 @@ public class ChartInteractions : IChartInteractions
     // Drawing state
     private Coordinates? _drawStartCoordinates;
     private IPlottable? _previewPlottable;
+    private Coordinates? _currentMouseCoordinates;
+    private string? _currentShapeInfo;
 
-    // Snap/magnet state
-    private bool _snapEnabled = false;
-    private SnapMode _snapMode = SnapMode.None;
-    private bool _shiftKeyPressed = false;
+    // Shape management
+    private readonly IShapeManager _shapeManager;
 
     public ChartDrawMode CurrentDrawMode => _currentDrawMode;
     public bool IsAttached => _isAttached;
-    public bool SnapEnabled 
-    { 
-        get => _snapEnabled; 
-        set => _snapEnabled = value; 
-    }
-    public SnapMode SnapMode 
-    { 
-        get => _snapMode; 
-        set => _snapMode = value; 
+    public IShapeManager ShapeManager => _shapeManager;
+
+    public ChartInteractions(IShapeManager shapeManager)
+    {
+        _shapeManager = shapeManager ?? throw new ArgumentNullException(nameof(shapeManager));
     }
 
     /// <summary>
@@ -51,6 +51,9 @@ public class ChartInteractions : IChartInteractions
 
         _formsPlot = formsPlot ?? throw new ArgumentNullException(nameof(formsPlot));
         _pricePlotIndex = pricePlotIndex;
+
+        // Attach shape manager
+        _shapeManager.Attach(_formsPlot);
 
         // Hook up event handlers
         _formsPlot.MouseDown += OnMouseDown;
@@ -96,6 +99,9 @@ public class ChartInteractions : IChartInteractions
         // Clear any preview
         ClearPreview();
 
+        // Clear shape info when changing modes
+        UpdateShapeInfo(null);
+
         // Disable pan/zoom when in drawing mode
         if (mode != ChartDrawMode.None && _formsPlot != null)
         {
@@ -105,6 +111,9 @@ public class ChartInteractions : IChartInteractions
         {
             _formsPlot.UserInputProcessor.IsEnabled = true;
         }
+
+        // Fire mode changed event
+        DrawModeChanged?.Invoke(this, mode);
     }
 
     /// <summary>
@@ -165,8 +174,18 @@ public class ChartInteractions : IChartInteractions
 
     private void OnMouseDown(object? sender, MouseEventArgs e)
     {
-        if (_formsPlot == null || _currentDrawMode == ChartDrawMode.None)
+        if (_formsPlot == null)
             return;
+
+        if (_currentDrawMode == ChartDrawMode.None)
+        {
+            // Selection mode - try to select a shape
+            if (e.Button == MouseButtons.Left)
+            {
+                HandleShapeSelection(e.X, e.Y, Control.ModifierKeys);
+            }
+            return;
+        }
 
         if (e.Button == MouseButtons.Left)
         {
@@ -178,15 +197,18 @@ public class ChartInteractions : IChartInteractions
 
     private void OnMouseMove(object? sender, MouseEventArgs e)
     {
-        if (_formsPlot == null || _currentDrawMode == ChartDrawMode.None)
+        if (_formsPlot == null)
+            return;
+
+        // Always update mouse coordinates
+        var currentCoordinates = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
+        UpdateMouseCoordinates(currentCoordinates);
+
+        if (_currentDrawMode == ChartDrawMode.None)
             return;
 
         if (_drawStartCoordinates == null)
             return;
-
-        // Get current mouse coordinates with snap applied
-        var currentCoordinates = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
-        currentCoordinates = ApplySnap(currentCoordinates);
 
         // Update preview
         UpdatePreview(_drawStartCoordinates.Value, currentCoordinates);
@@ -217,125 +239,37 @@ public class ChartInteractions : IChartInteractions
 
     #endregion
 
-    #region Snap Logic
+    #region Status Updates
 
-    /// <summary>
-    /// Applies snap logic to the given coordinates based on snap mode and Shift key state.
-    /// </summary>
-    private Coordinates ApplySnap(Coordinates coords)
+    private void UpdateMouseCoordinates(Coordinates coordinates)
     {
-        // Check if snap is enabled (either via property or Shift key)
-        bool shouldSnap = _snapEnabled || _shiftKeyPressed;
-        
-        if (!shouldSnap || _snapMode == SnapMode.None)
-            return coords;
+        _currentMouseCoordinates = coordinates;
+        MouseCoordinatesChanged?.Invoke(this, coordinates);
+    }
 
-        return _snapMode switch
+    private void UpdateShapeInfo(string? info)
+    {
+        _currentShapeInfo = info;
+        ShapeInfoChanged?.Invoke(this, info ?? string.Empty);
+    }
+
+    private string CalculateShapeInfo(Coordinates start, Coordinates end)
+    {
+        var deltaX = end.X - start.X;
+        var deltaY = end.Y - start.Y;
+        var distance = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+        var angle = Math.Atan2(deltaY, deltaX) * 180.0 / Math.PI;
+
+        return _currentDrawMode switch
         {
-            SnapMode.Price => SnapToPrice(coords),
-            SnapMode.CandleOHLC => SnapToCandleOHLC(coords),
-            _ => coords
+            ChartDrawMode.TrendLine => $"Length: {distance:F2}, Angle: {angle:F1}°",
+            ChartDrawMode.HorizontalLine => $"Price: {end.Y:F2}",
+            ChartDrawMode.VerticalLine => $"Time: {end.X:F2}",
+            ChartDrawMode.Rectangle => $"Width: {Math.Abs(deltaX):F2}, Height: {Math.Abs(deltaY):F2}",
+            ChartDrawMode.Circle => $"RadiusX: {Math.Abs(deltaX) / 2:F2}, RadiusY: {Math.Abs(deltaY) / 2:F2}",
+            ChartDrawMode.FibonacciRetracement => $"Range: {Math.Abs(deltaY):F2}",
+            _ => string.Empty
         };
-    }
-
-    /// <summary>
-    /// Snaps coordinates to rounded price levels.
-    /// </summary>
-    private Coordinates SnapToPrice(Coordinates coords)
-    {
-        if (_formsPlot == null)
-            return coords;
-
-        // Get the current price range visible on the chart
-        var yAxis = _formsPlot.Plot.Axes.Left;
-        var yRange = yAxis.Max - yAxis.Min;
-
-        // Determine appropriate grid spacing based on visible range
-        double gridSize = CalculatePriceGridSize(yRange);
-
-        // Snap Y coordinate to nearest grid line
-        double snappedY = Math.Round(coords.Y / gridSize) * gridSize;
-
-        // For time axis, snap to visible candle positions if available
-        double snappedX = coords.X;
-        if (_boundCandles != null && _boundCandles.Count > 0)
-        {
-            snappedX = SnapToNearestCandleTime(coords.X);
-        }
-
-        return new Coordinates(snappedX, snappedY);
-    }
-
-    /// <summary>
-    /// Calculates appropriate price grid size based on visible range.
-    /// </summary>
-    private double CalculatePriceGridSize(double range)
-    {
-        // Use logarithmic scale for grid sizing
-        double magnitude = Math.Pow(10, Math.Floor(Math.Log10(range)));
-        double normalized = range / magnitude;
-
-        if (normalized < 2)
-            return magnitude * 0.2;
-        else if (normalized < 5)
-            return magnitude * 0.5;
-        else
-            return magnitude;
-    }
-
-    /// <summary>
-    /// Snaps coordinates to the nearest candle's OHLC values.
-    /// </summary>
-    private Coordinates SnapToCandleOHLC(Coordinates coords)
-    {
-        if (_boundCandles == null || _boundCandles.Count == 0)
-            return coords;
-
-        // Find the nearest candle by time (X coordinate)
-        var nearestCandle = FindNearestCandle(coords.X);
-        if (nearestCandle == null)
-            return coords;
-
-        // Find the closest OHLC value to the Y coordinate
-        double[] ohlcValues = new[] 
-        { 
-            nearestCandle.Value.Open, 
-            nearestCandle.Value.High, 
-            nearestCandle.Value.Low, 
-            nearestCandle.Value.Close 
-        };
-
-        double closestPrice = ohlcValues
-            .OrderBy(price => Math.Abs(price - coords.Y))
-            .First();
-
-        double snappedX = nearestCandle.Value.DateTime.ToOADate();
-
-        return new Coordinates(snappedX, closestPrice);
-    }
-
-    /// <summary>
-    /// Finds the nearest candle to the given X coordinate (time).
-    /// </summary>
-    private OHLC? FindNearestCandle(double x)
-    {
-        if (_boundCandles == null || _boundCandles.Count == 0)
-            return null;
-
-        var targetTime = DateTime.FromOADate(x);
-        
-        return _boundCandles
-            .OrderBy(candle => Math.Abs((candle.DateTime - targetTime).TotalSeconds))
-            .FirstOrDefault();
-    }
-
-    /// <summary>
-    /// Snaps X coordinate to the nearest candle time.
-    /// </summary>
-    private double SnapToNearestCandleTime(double x)
-    {
-        var nearestCandle = FindNearestCandle(x);
-        return nearestCandle?.DateTime.ToOADate() ?? x;
     }
 
     #endregion
@@ -350,6 +284,10 @@ public class ChartInteractions : IChartInteractions
         // Clear previous preview
         ClearPreview();
 
+        // Calculate and update shape info
+        var shapeInfo = CalculateShapeInfo(start, end);
+        UpdateShapeInfo(shapeInfo);
+
         // Create preview based on draw mode
         _previewPlottable = _currentDrawMode switch
         {
@@ -359,12 +297,14 @@ public class ChartInteractions : IChartInteractions
             ChartDrawMode.Rectangle => CreateRectanglePreview(start, end),
             ChartDrawMode.Circle => CreateCirclePreview(start, end),
             ChartDrawMode.FibonacciRetracement => CreateFibonacciPreview(start, end),
-            // TODO: Implement other draw modes (FibonacciExtension, Channel, Triangle, Text)
+            ChartDrawMode.FibonacciExtension => CreateFibonacciPreview(start, end),
+            // TODO: Implement other draw modes (Channel, Triangle, Text)
             _ => null
         };
 
         if (_previewPlottable != null)
         {
+            _previewPlottable = strategy.CreatePreview(start, end, _formsPlot.Plot);
             _formsPlot.Plot.Add.Plottable(_previewPlottable);
             _formsPlot.Refresh();
         }
@@ -385,8 +325,9 @@ public class ChartInteractions : IChartInteractions
         if (_formsPlot == null)
             return;
 
-        // Create permanent plottable based on draw mode
-        IPlottable? plottable = _currentDrawMode switch
+        // Use strategy pattern to create final shape
+        var strategy = DrawModeStrategyFactory.CreateStrategy(_currentDrawMode);
+        if (strategy != null)
         {
             ChartDrawMode.TrendLine => CreateTrendLine(start, end),
             ChartDrawMode.HorizontalLine => CreateHorizontalLine(start, end),
@@ -394,137 +335,288 @@ public class ChartInteractions : IChartInteractions
             ChartDrawMode.Rectangle => CreateRectangle(start, end),
             ChartDrawMode.Circle => CreateCircle(start, end),
             ChartDrawMode.FibonacciRetracement => CreateFibonacci(start, end),
-            // TODO: Implement other draw modes
+            ChartDrawMode.FibonacciExtension => CreateFibonacci(start, end),
+            // TODO: Implement other draw modes (Channel, Triangle, Text)
             _ => null
         };
 
         if (plottable != null)
         {
-            _formsPlot.Plot.Add.Plottable(plottable);
-            _formsPlot.Refresh();
+            _shapeManager.AddShape(plottable);
         }
     }
 
-    private IPlottable CreateTrendLinePreview(Coordinates start, Coordinates end)
+
+
+    #endregion
+
+    #region Shape Persistence
+
+    private ShapeAnnotation CreateShapeMetadata(ChartDrawMode drawMode, Coordinates start, Coordinates end)
     {
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 1;
-        line.LineColor = Colors.Gray.WithAlpha(0.5);
-        return line;
+        var metadata = new ShapeAnnotation
+        {
+            ShapeType = drawMode.ToString(),
+            X1 = start.X,
+            Y1 = start.Y,
+            X2 = end.X,
+            Y2 = end.Y
+        };
+
+        // Set colors and styles based on shape type
+        switch (drawMode)
+        {
+            case ChartDrawMode.TrendLine:
+                metadata.LineColor = "#0000FF"; // Blue
+                metadata.LineWidth = 2;
+                break;
+            case ChartDrawMode.HorizontalLine:
+                metadata.LineColor = "#008000"; // Green
+                metadata.LineWidth = 2;
+                break;
+            case ChartDrawMode.VerticalLine:
+                metadata.LineColor = "#FFA500"; // Orange
+                metadata.LineWidth = 2;
+                break;
+            case ChartDrawMode.Rectangle:
+                metadata.LineColor = "#800080"; // Purple
+                metadata.LineWidth = 2;
+                metadata.FillColor = "#800080";
+                metadata.FillAlpha = 25;
+                break;
+            case ChartDrawMode.Circle:
+                metadata.LineColor = "#00FFFF"; // Cyan
+                metadata.LineWidth = 2;
+                metadata.FillColor = "#00FFFF";
+                metadata.FillAlpha = 25;
+                break;
+            case ChartDrawMode.FibonacciRetracement:
+                metadata.LineColor = "#FFD700"; // Gold
+                metadata.LineWidth = 2;
+                break;
+        }
+
+        return metadata;
     }
 
-    private IPlottable CreateTrendLine(Coordinates start, Coordinates end)
+    public void SaveShapesToFile(string filePath)
     {
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 2;
-        line.LineColor = Colors.Blue;
-        return line;
+        var annotations = new ChartAnnotations
+        {
+            Version = 1,
+            Shapes = _drawnShapes.Select(s => s.metadata).ToList()
+        };
+
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true
+        };
+
+        var json = JsonSerializer.Serialize(annotations, options);
+        File.WriteAllText(filePath, json);
     }
 
-    private IPlottable CreateHorizontalLinePreview(Coordinates start, Coordinates end)
+    public void LoadShapesFromFile(string filePath)
     {
-        var hLine = _formsPlot!.Plot.Add.HorizontalLine(end.Y);
-        hLine.LineWidth = 1;
-        hLine.LineColor = Colors.Gray.WithAlpha(0.5);
-        return hLine;
+        if (_formsPlot == null)
+            throw new InvalidOperationException("Chart is not attached. Call Attach() first.");
+
+        if (!File.Exists(filePath))
+            throw new FileNotFoundException("Annotations file not found.", filePath);
+
+        var json = File.ReadAllText(filePath);
+        var annotations = JsonSerializer.Deserialize<ChartAnnotations>(json);
+
+        if (annotations == null || annotations.Shapes == null)
+            return;
+
+        // Clear existing shapes
+        foreach (var (plottable, _) in _drawnShapes)
+        {
+            _formsPlot.Plot.Remove(plottable);
+        }
+        _drawnShapes.Clear();
+
+        // Load and recreate each shape
+        foreach (var shape in annotations.Shapes)
+        {
+            var start = new Coordinates(shape.X1, shape.Y1);
+            var end = new Coordinates(shape.X2, shape.Y2);
+
+            IPlottable? plottable = null;
+
+            // Parse the shape type and create the appropriate plottable
+            if (Enum.TryParse<ChartDrawMode>(shape.ShapeType, out var drawMode))
+            {
+                plottable = drawMode switch
+                {
+                    ChartDrawMode.TrendLine => CreateTrendLine(start, end),
+                    ChartDrawMode.HorizontalLine => CreateHorizontalLine(start, end),
+                    ChartDrawMode.VerticalLine => CreateVerticalLine(start, end),
+                    ChartDrawMode.Rectangle => CreateRectangle(start, end),
+                    ChartDrawMode.Circle => CreateCircle(start, end),
+                    ChartDrawMode.FibonacciRetracement => CreateFibonacci(start, end),
+                    _ => null
+                };
+
+                if (plottable != null)
+                {
+                    _drawnShapes.Add((plottable, shape));
+                    _formsPlot.Plot.Add.Plottable(plottable);
+                }
+            }
+        }
+
+        _formsPlot.Refresh();
     }
 
-    private IPlottable CreateHorizontalLine(Coordinates start, Coordinates end)
+    #endregion
+
+    #region Shape Selection
+
+    private void HandleShapeSelection(int pixelX, int pixelY, Keys modifiers)
     {
-        var hLine = _formsPlot!.Plot.Add.HorizontalLine(end.Y);
-        hLine.LineWidth = 2;
-        hLine.LineColor = Colors.Green;
-        return hLine;
+        if (_formsPlot == null)
+            return;
+
+        var coordinates = _formsPlot.Plot.GetCoordinates(pixelX, pixelY);
+        var clickedShape = FindShapeNearPoint(coordinates, pixelX, pixelY);
+
+        bool isCtrlPressed = modifiers.HasFlag(Keys.Control);
+
+        if (clickedShape != null)
+        {
+            // If Ctrl is not pressed, deselect all other shapes
+            if (!isCtrlPressed)
+            {
+                foreach (var shape in _shapeManager.Shapes)
+                {
+                    if (shape != clickedShape)
+                    {
+                        shape.IsSelected = false;
+                    }
+                }
+            }
+
+            // Toggle selection of clicked shape
+            clickedShape.IsSelected = !clickedShape.IsSelected;
+        }
+        else if (!isCtrlPressed)
+        {
+            // Clicked on empty area without Ctrl - deselect all
+            foreach (var shape in _shapeManager.Shapes)
+            {
+                shape.IsSelected = false;
+            }
+        }
+
+        // Update visual appearance and refresh
+        UpdateShapeVisuals();
+        _formsPlot.Refresh();
     }
 
-    private IPlottable CreateVerticalLinePreview(Coordinates start, Coordinates end)
+    private DrawnShape? FindShapeNearPoint(Coordinates coordinates, int pixelX, int pixelY)
     {
-        var vLine = _formsPlot!.Plot.Add.VerticalLine(end.X);
-        vLine.LineWidth = 1;
-        vLine.LineColor = Colors.Gray.WithAlpha(0.5);
-        return vLine;
+        if (_formsPlot == null)
+            return null;
+
+        const double SELECTION_TOLERANCE = 10.0; // pixels
+
+        // Check shapes in reverse order (most recently added first)
+        for (int i = _shapeManager.Shapes.Count - 1; i >= 0; i--)
+        {
+            var shape = _shapeManager.Shapes[i];
+            if (!shape.IsVisible)
+                continue;
+
+            // Simple distance-based selection
+            // For more complex shapes, this could be improved with actual geometry tests
+            if (IsPointNearPlottable(shape.Plottable, coordinates, pixelX, pixelY, SELECTION_TOLERANCE))
+            {
+                return shape;
+            }
+        }
+
+        return null;
     }
 
-    private IPlottable CreateVerticalLine(Coordinates start, Coordinates end)
+    private bool IsPointNearPlottable(IPlottable plottable, Coordinates coordinates, int pixelX, int pixelY, double tolerance)
     {
-        var vLine = _formsPlot!.Plot.Add.VerticalLine(end.X);
-        vLine.LineWidth = 2;
-        vLine.LineColor = Colors.Orange;
-        return vLine;
-    }
-
-    private IPlottable CreateRectanglePreview(Coordinates start, Coordinates end)
-    {
-        var rect = _formsPlot!.Plot.Add.Rectangle(
-            Math.Min(start.X, end.X),
-            Math.Max(start.X, end.X),
-            Math.Min(start.Y, end.Y),
-            Math.Max(start.Y, end.Y));
-        rect.LineWidth = 1;
-        rect.LineColor = Colors.Gray.WithAlpha(0.5);
-        rect.FillColor = Colors.Gray.WithAlpha(0.1);
-        return rect;
-    }
-
-    private IPlottable CreateRectangle(Coordinates start, Coordinates end)
-    {
-        var rect = _formsPlot!.Plot.Add.Rectangle(
-            Math.Min(start.X, end.X),
-            Math.Max(start.X, end.X),
-            Math.Min(start.Y, end.Y),
-            Math.Max(start.Y, end.Y));
-        rect.LineWidth = 2;
-        rect.LineColor = Colors.Purple;
-        rect.FillColor = Colors.Purple.WithAlpha(0.1);
-        return rect;
-    }
-
-    private IPlottable CreateCirclePreview(Coordinates start, Coordinates end)
-    {
-        var centerX = (start.X + end.X) / 2;
-        var centerY = (start.Y + end.Y) / 2;
-        var radiusX = Math.Abs(end.X - start.X) / 2;
-        var radiusY = Math.Abs(end.Y - start.Y) / 2;
+        // This is a simplified implementation
+        // In a production system, you'd want more sophisticated hit testing based on plottable type
         
-        var circle = _formsPlot!.Plot.Add.Ellipse(centerX, centerY, radiusX, radiusY);
-        circle.LineWidth = 1;
-        circle.LineColor = Colors.Gray.WithAlpha(0.5);
-        circle.FillColor = Colors.Gray.WithAlpha(0.1);
-        return circle;
+        // For now, use the plottable's axis limits as a rough bounding box
+        try
+        {
+            var bounds = plottable.GetAxisLimits();
+            
+            // Expand bounds slightly for easier selection
+            double margin = (bounds.Rect.Width + bounds.Rect.Height) * 0.02; // 2% margin
+            
+            return coordinates.X >= bounds.Rect.Left - margin &&
+                   coordinates.X <= bounds.Rect.Right + margin &&
+                   coordinates.Y >= bounds.Rect.Bottom - margin &&
+                   coordinates.Y <= bounds.Rect.Top + margin;
+        }
+        catch
+        {
+            // If we can't get bounds, skip this plottable
+            return false;
+        }
     }
 
-    private IPlottable CreateCircle(Coordinates start, Coordinates end)
+    private void UpdateShapeVisuals()
     {
-        var centerX = (start.X + end.X) / 2;
-        var centerY = (start.Y + end.Y) / 2;
-        var radiusX = Math.Abs(end.X - start.X) / 2;
-        var radiusY = Math.Abs(end.Y - start.Y) / 2;
+        foreach (var shape in _shapeManager.Shapes)
+        {
+            // Update visual appearance based on selection state
+            // This is a basic implementation - you could enhance it with different colors, line widths, etc.
+            try
+            {
+                // Try to access common line properties
+                if (shape.Plottable is IHasLine linePlottable)
+                {
+                    // Make selected shapes more prominent
+                    linePlottable.LineWidth = shape.IsSelected ? 3 : 2;
+                }
+            }
+            catch
+            {
+                // Some plottables might not support these properties
+            }
+        }
+    }
+
+    #endregion
+
+    #region Undo/Redo/Delete Operations
+
+    public bool Undo()
+    {
+        if (!_shapeManager.CanUndo)
+            return false;
+
+        var result = _shapeManager.Undo();
+        _formsPlot?.Refresh();
+        return result;
+    }
+
+    public bool Redo()
+    {
+        var levels = _currentDrawMode == ChartDrawMode.FibonacciExtension
+            ? FibonacciLevel.GetDefaultExtensionLevels()
+            : FibonacciLevel.GetDefaultRetracementLevels();
         
-        var circle = _formsPlot!.Plot.Add.Ellipse(centerX, centerY, radiusX, radiusY);
-        circle.LineWidth = 2;
-        circle.LineColor = Colors.Cyan;
-        circle.FillColor = Colors.Cyan.WithAlpha(0.1);
-        return circle;
+        return new FibonacciTool(start, end, levels, isPreview: true);
     }
 
-    private IPlottable CreateFibonacciPreview(Coordinates start, Coordinates end)
+    public void DeleteSelectedShapes()
     {
-        // TODO: Implement full Fibonacci retracement with levels (0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0)
-        // For now, create a simple line as preview
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 1;
-        line.LineColor = Colors.Gold.WithAlpha(0.5);
-        return line;
-    }
-
-    private IPlottable CreateFibonacci(Coordinates start, Coordinates end)
-    {
-        // TODO: Implement full Fibonacci retracement with levels and labels
-        // For now, create a simple line
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 2;
-        line.LineColor = Colors.Gold;
-        return line;
+        var levels = _currentDrawMode == ChartDrawMode.FibonacciExtension
+            ? FibonacciLevel.GetDefaultExtensionLevels()
+            : FibonacciLevel.GetDefaultRetracementLevels();
+        
+        return new FibonacciTool(start, end, levels, isPreview: false);
     }
 
     #endregion
@@ -554,6 +646,7 @@ public class ChartInteractions : IChartInteractions
                 _formsPlot.KeyUp -= OnKeyUp;
             }
 
+            _shapeManager?.Dispose();
             _formsPlot = null;
             _boundCandles = null;
             _previewPlottable = null;

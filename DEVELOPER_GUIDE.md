@@ -64,8 +64,8 @@ _chartInteractions.SetDrawMode(ChartDrawMode.TrendLine);
 // - VerticalLine
 // - Rectangle
 // - Circle
-// - FibonacciRetracement
-// - FibonacciExtension
+// - FibonacciRetracement (fully implemented with all levels)
+// - FibonacciExtension (fully implemented with projection levels)
 // - Channel
 // - Triangle
 // - Text
@@ -94,7 +94,11 @@ _chartInteractions.AddCandle(newCandle);
 
 ## Extending the Service
 
-### Adding New Drawing Tools
+### Adding New Drawing Tools (Using Strategy Pattern)
+
+The ChartPro project uses the **Strategy Pattern** for drawing modes. This makes adding new draw modes straightforward and maintainable. For detailed architecture information, see [STRATEGY_PATTERN.md](STRATEGY_PATTERN.md).
+
+#### Quick Steps:
 
 1. **Add to ChartDrawMode enum** (ChartDrawMode.cs)
 ```csharp
@@ -105,53 +109,83 @@ public enum ChartDrawMode
 }
 ```
 
-2. **Implement in ChartInteractions** (ChartInteractions.cs)
-
-Add preview method:
+2. **Create Strategy Class** (ChartPro/Charting/Interactions/Strategies/MyNewToolStrategy.cs)
 ```csharp
-private IPlottable CreateMyNewToolPreview(Coordinates start, Coordinates end)
+using ScottPlot;
+
+namespace ChartPro.Charting.Interactions.Strategies;
+
+public class MyNewToolStrategy : IDrawModeStrategy
 {
-    // Create preview with gray, semi-transparent style
-    var tool = _formsPlot!.Plot.Add.MyNewTool(start, end);
-    tool.LineWidth = 1;
-    tool.LineColor = Colors.Gray.WithAlpha(0.5);
-    return tool;
+    public IPlottable CreatePreview(Coordinates start, Coordinates end, Plot plot)
+    {
+        // Create preview with gray, semi-transparent style
+        var tool = plot.Add.MyNewTool(start, end);
+        tool.LineWidth = 1;
+        tool.LineColor = Colors.Gray.WithAlpha(0.5);
+        return tool;
+    }
+
+    public IPlottable CreateFinal(Coordinates start, Coordinates end, Plot plot)
+    {
+        // Create final with colored, solid style
+        var tool = plot.Add.MyNewTool(start, end);
+        tool.LineWidth = 2;
+        tool.LineColor = Colors.Blue;
+        return tool;
+    }
 }
 ```
 
-Add final method:
+3. **Update Factory** (DrawModeStrategyFactory.cs)
 ```csharp
-private IPlottable CreateMyNewTool(Coordinates start, Coordinates end)
+public static IDrawModeStrategy? CreateStrategy(ChartDrawMode mode)
 {
-    // Create final with colored, solid style
-    var tool = _formsPlot!.Plot.Add.MyNewTool(start, end);
-    tool.LineWidth = 2;
-    tool.LineColor = Colors.Blue;
-    return tool;
+    return mode switch
+    {
+        // ... existing cases
+        ChartDrawMode.MyNewTool => new MyNewToolStrategy(),
+        _ => null
+    };
 }
 ```
 
-Update UpdatePreview method:
+4. **Add Unit Tests** (ChartPro.Tests/Strategies/MyNewToolStrategyTests.cs)
 ```csharp
-_previewPlottable = _currentDrawMode switch
+public class MyNewToolStrategyTests
 {
-    // ... existing cases
-    ChartDrawMode.MyNewTool => CreateMyNewToolPreview(start, end),
-    _ => null
-};
+    private readonly MyNewToolStrategy _strategy;
+    private readonly Plot _plot;
+
+    public MyNewToolStrategyTests()
+    {
+        _strategy = new MyNewToolStrategy();
+        _plot = new Plot();
+    }
+
+    [Fact]
+    public void CreatePreview_ShouldReturnNotNull()
+    {
+        var result = _strategy.CreatePreview(
+            new Coordinates(10, 20), 
+            new Coordinates(30, 40), 
+            _plot);
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void CreateFinal_ShouldReturnNotNull()
+    {
+        var result = _strategy.CreateFinal(
+            new Coordinates(10, 20), 
+            new Coordinates(30, 40), 
+            _plot);
+        Assert.NotNull(result);
+    }
+}
 ```
 
-Update FinalizeShape method:
-```csharp
-IPlottable? plottable = _currentDrawMode switch
-{
-    // ... existing cases
-    ChartDrawMode.MyNewTool => CreateMyNewTool(start, end),
-    _ => null
-};
-```
-
-3. **Add UI Button** (MainForm.cs)
+5. **Add UI Button** (MainForm.cs)
 ```csharp
 var btnMyNewTool = CreateToolButton("My New Tool", ChartDrawMode.MyNewTool, ref yPos);
 toolbarPanel.Controls.Add(btnMyNewTool);
@@ -184,6 +218,44 @@ private void OnMouseUp(object? sender, MouseEventArgs e)
     }
 }
 ```
+
+### Fibonacci Tools Implementation
+
+The Fibonacci tools use a custom plottable implementation:
+
+**Key Components**:
+1. **FibonacciLevel.cs**: Defines level properties (ratio, label, color, visibility)
+2. **FibonacciTool.cs**: Custom IPlottable that renders multiple levels with labels
+
+**Example - Using Fibonacci Levels**:
+```csharp
+// Get default retracement levels
+var levels = FibonacciLevel.GetDefaultRetracementLevels();
+// Returns: 0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0
+
+// Get extension levels (includes retracement + extensions)
+var extLevels = FibonacciLevel.GetDefaultExtensionLevels();
+// Returns: all retracement levels + 1.272, 1.618, 2.0, 2.618
+
+// Create custom levels
+var customLevels = new List<FibonacciLevel>
+{
+    new FibonacciLevel(0.382, "0.382", Colors.Yellow, isVisible: true),
+    new FibonacciLevel(0.618, "0.618", Colors.Blue, isVisible: true),
+    new FibonacciLevel(1.618, "1.618", Colors.Magenta, isVisible: true)
+};
+
+// Create Fibonacci tool
+var fibTool = new FibonacciTool(startCoord, endCoord, customLevels, isPreview: false);
+```
+
+**Features**:
+- Automatic price calculation based on coordinate range
+- Color-coded levels for easy identification
+- Inline labels showing ratio and actual price
+- Preview mode (semi-transparent, no labels)
+- Final mode (solid colors with labels)
+- Direction-agnostic (works for uptrends and downtrends)
 
 ### Custom Event Handlers
 

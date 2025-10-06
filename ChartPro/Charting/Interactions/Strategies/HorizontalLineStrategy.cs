@@ -2,42 +2,24 @@ using ScottPlot;
 
 namespace ChartPro.Charting.Interactions.Strategies;
 
-public class HorizontalLineStrategy : BaseDrawStrategy
+/// <summary>
+/// Strategy for drawing horizontal lines.
+/// </summary>
+public class HorizontalLineStrategy : IDrawModeStrategy
 {
-    public HorizontalLineStrategy(IInteractionContext ctx) : base(ctx) { }
-
-    public override void OnMouseDown(Coordinates coords)
+    public IPlottable CreatePreview(Coordinates start, Coordinates end, Plot plot)
     {
-        Start = MaybeSnap(coords);
-        var y = Start.Value.Y;
-        var h = Ctx.FormsPlot.Plot.Add.HorizontalLine(y);
-        h.LineWidth = 1;
-        h.LineColor = Colors.Gray.WithAlpha(0.5);
-        Preview = h;
-        Ctx.SetPreview(h);
-        Ctx.Refresh();
+        var hLine = plot.Add.HorizontalLine(end.Y);
+        hLine.LineWidth = 1;
+        hLine.LineColor = Colors.Gray.WithAlpha(0.5);
+        return hLine;
     }
 
-    public override void OnMouseMove(Coordinates coords)
+    public IPlottable CreateFinal(Coordinates start, Coordinates end, Plot plot)
     {
-        if (Preview is ScottPlot.Plottables.HorizontalLine h)
-        {
-            var end = MaybeSnap(coords);
-            h.Y = end.Y;
-            Ctx.Refresh();
-        }
-    }
-
-    public override void OnMouseUp(Coordinates coords)
-    {
-        var end = MaybeSnap(coords);
-        var h = Ctx.FormsPlot.Plot.Add.HorizontalLine(end.Y);
-        h.LineWidth = 2;
-        h.LineColor = Colors.Green;
-        Ctx.AddFinal(h);
-        Ctx.SetPreview(null);
-        Preview = null;
-        Start = null;
-        Ctx.Refresh();
+        var hLine = plot.Add.HorizontalLine(end.Y);
+        hLine.LineWidth = 2;
+        hLine.LineColor = Colors.Green;
+        return hLine;
     }
 }

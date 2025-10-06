@@ -2,42 +2,24 @@ using ScottPlot;
 
 namespace ChartPro.Charting.Interactions.Strategies;
 
-public class VerticalLineStrategy : BaseDrawStrategy
+/// <summary>
+/// Strategy for drawing vertical lines.
+/// </summary>
+public class VerticalLineStrategy : IDrawModeStrategy
 {
-    public VerticalLineStrategy(IInteractionContext ctx) : base(ctx) { }
-
-    public override void OnMouseDown(Coordinates coords)
+    public IPlottable CreatePreview(Coordinates start, Coordinates end, Plot plot)
     {
-        Start = MaybeSnap(coords);
-        var x = Start.Value.X;
-        var v = Ctx.FormsPlot.Plot.Add.VerticalLine(x);
-        v.LineWidth = 1;
-        v.LineColor = Colors.Gray.WithAlpha(0.5);
-        Preview = v;
-        Ctx.SetPreview(v);
-        Ctx.Refresh();
+        var vLine = plot.Add.VerticalLine(end.X);
+        vLine.LineWidth = 1;
+        vLine.LineColor = Colors.Gray.WithAlpha(0.5);
+        return vLine;
     }
 
-    public override void OnMouseMove(Coordinates coords)
+    public IPlottable CreateFinal(Coordinates start, Coordinates end, Plot plot)
     {
-        if (Preview is ScottPlot.Plottables.VerticalLine v)
-        {
-            var end = MaybeSnap(coords);
-            v.X = end.X;
-            Ctx.Refresh();
-        }
-    }
-
-    public override void OnMouseUp(Coordinates coords)
-    {
-        var end = MaybeSnap(coords);
-        var v = Ctx.FormsPlot.Plot.Add.VerticalLine(end.X);
-        v.LineWidth = 2;
-        v.LineColor = Colors.Orange;
-        Ctx.AddFinal(v);
-        Ctx.SetPreview(null);
-        Preview = null;
-        Start = null;
-        Ctx.Refresh();
+        var vLine = plot.Add.VerticalLine(end.X);
+        vLine.LineWidth = 2;
+        vLine.LineColor = Colors.Orange;
+        return vLine;
     }
 }
