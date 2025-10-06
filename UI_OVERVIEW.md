@@ -79,6 +79,12 @@ The ChartPro application features a clean, professional interface designed for t
 6. **Circle** - Draw circular/elliptical shapes
 7. **Fibonacci** - Draw Fibonacci retracement
 
+**Snap/Magnet Controls**:
+- **Enable Snap (or hold Shift)** - Checkbox to enable snap functionality
+- **No Snap** - Radio button for no snapping (default)
+- **Snap to Price Grid** - Radio button to snap to rounded price levels
+- **Snap to Candle OHLC** - Radio button to snap to nearest candle's OHLC values
+
 **Special Button**:
 - **Generate Sample Data** - Creates 100 random OHLC candles
 
