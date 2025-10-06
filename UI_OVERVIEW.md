@@ -168,19 +168,14 @@ The ChartPro application features a clean, professional interface designed for t
 
 ## Keyboard Shortcuts
 
-**Implemented Shortcuts**:
-- `Esc` - Cancel drawing, return to None mode (pan/zoom enabled)
-- `1` - Select Trend Line tool
-- `2` - Select Horizontal Line tool
-- `3` - Select Vertical Line tool
-- `4` - Select Rectangle tool
-- `5` - Select Circle tool
-- `6` - Select Fibonacci Retracement tool
+**Implemented**:
+- `Ctrl+Z` - Undo last shape operation
+- `Ctrl+Y` - Redo previously undone operation
 
-**Planned for Future**:
+**Planned for future**:
+- `Esc` - Cancel drawing, return to None mode
 - `Delete` - Remove selected shape
-- `Ctrl+Z` - Undo last shape
-- `Ctrl+Y` - Redo last undone shape
+- `1-6` - Quick select drawing tools
 
 ## Real-Time Updates
 

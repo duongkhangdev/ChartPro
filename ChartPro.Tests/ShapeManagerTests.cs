@@ -1,106 +1,234 @@
-using ChartPro.Charting;
+using ChartPro.Charting.ShapeManagement;
 using ChartPro.Charting.Commands;
-using ChartPro.Charting.Shapes;
 using ScottPlot;
+using ScottPlot.WinForms;
 
 namespace ChartPro.Tests;
 
-public class ShapeManagerTests
+public class ShapeManagerTests : IDisposable
 {
-    [Fact]
-    public void ShapeManager_InitialState_IsEmpty()
-    {
-        // Arrange & Act
-        var manager = new ShapeManager();
+    private readonly FormsPlot _formsPlot;
+    private readonly ShapeManager _shapeManager;
 
-        // Assert
-        Assert.Empty(manager.Shapes);
-        Assert.False(manager.CanUndo);
-        Assert.False(manager.CanRedo);
+    public ShapeManagerTests()
+    {
+        _formsPlot = new FormsPlot();
+        _shapeManager = new ShapeManager();
+        _shapeManager.Attach(_formsPlot);
+    }
+
+    public void Dispose()
+    {
+        _shapeManager?.Dispose();
+        _formsPlot?.Dispose();
     }
 
     [Fact]
-    public void AddShape_AddsShapeToManager()
+    public void ShapeManager_CanAttach()
     {
         // Arrange
-        var manager = new ShapeManager();
-        var plot = new Plot();
-        var line = plot.Add.Line(0, 0, 10, 10);
-        var shape = new DrawnShape(line, ChartDrawMode.TrendLine);
+        var shapeManager = new ShapeManager();
+        var formsPlot = new FormsPlot();
 
         // Act
-        manager.AddShape(shape);
+        shapeManager.Attach(formsPlot);
 
         // Assert
-        Assert.Single(manager.Shapes);
-        Assert.Equal(shape, manager.Shapes[0]);
+        Assert.True(shapeManager.IsAttached);
+
+        // Cleanup
+        shapeManager.Dispose();
+        formsPlot.Dispose();
     }
 
     [Fact]
-    public void RemoveShape_RemovesShapeFromManager()
+    public void ShapeManager_ThrowsExceptionWhenAttachedTwice()
     {
         // Arrange
-        var manager = new ShapeManager();
-        var plot = new Plot();
-        var line = plot.Add.Line(0, 0, 10, 10);
-        var shape = new DrawnShape(line, ChartDrawMode.TrendLine);
-        manager.AddShape(shape);
+        var shapeManager = new ShapeManager();
+        var formsPlot = new FormsPlot();
+        shapeManager.Attach(formsPlot);
 
-        // Act
-        manager.RemoveShape(shape);
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => shapeManager.Attach(formsPlot));
 
-        // Assert
-        Assert.Empty(manager.Shapes);
+        // Cleanup
+        shapeManager.Dispose();
+        formsPlot.Dispose();
     }
 
     [Fact]
-    public void GetShapeById_ReturnsCorrectShape()
+    public void AddShape_AddsShapeToChart()
     {
         // Arrange
-        var manager = new ShapeManager();
-        var plot = new Plot();
-        var line = plot.Add.Line(0, 0, 10, 10);
-        var shape = new DrawnShape(line, ChartDrawMode.TrendLine);
-        manager.AddShape(shape);
+        var line = _formsPlot.Plot.Add.Line(0, 0, 10, 10);
 
         // Act
-        var found = manager.GetShapeById(shape.Id);
+        _shapeManager.AddShape(line);
 
         // Assert
-        Assert.NotNull(found);
-        Assert.Equal(shape, found);
+        Assert.Single(_shapeManager.Shapes);
+        Assert.Contains(line, _shapeManager.Shapes);
     }
 
     [Fact]
-    public void GetShapeById_ReturnsNullForInvalidId()
+    public void AddShape_EnablesUndo()
     {
         // Arrange
-        var manager = new ShapeManager();
+        var line = _formsPlot.Plot.Add.Line(0, 0, 10, 10);
 
         // Act
-        var found = manager.GetShapeById(Guid.NewGuid());
+        _shapeManager.AddShape(line);
 
         // Assert
-        Assert.Null(found);
+        Assert.True(_shapeManager.CanUndo);
+        Assert.False(_shapeManager.CanRedo);
     }
 
     [Fact]
-    public void Clear_RemovesAllShapesAndHistory()
+    public void Undo_RemovesLastShape()
     {
         // Arrange
-        var manager = new ShapeManager();
-        var plot = new Plot();
-        var line = plot.Add.Line(0, 0, 10, 10);
-        var shape = new DrawnShape(line, ChartDrawMode.TrendLine);
-        var command = new AddShapeCommand(manager, shape, plot);
-        manager.ExecuteCommand(command);
+        var line = _formsPlot.Plot.Add.Line(0, 0, 10, 10);
+        _shapeManager.AddShape(line);
 
         // Act
-        manager.Clear();
+        var result = _shapeManager.Undo();
 
         // Assert
-        Assert.Empty(manager.Shapes);
-        Assert.False(manager.CanUndo);
-        Assert.False(manager.CanRedo);
+        Assert.True(result);
+        Assert.Empty(_shapeManager.Shapes);
+        Assert.False(_shapeManager.CanUndo);
+        Assert.True(_shapeManager.CanRedo);
+    }
+
+    [Fact]
+    public void Redo_RestoresUndoneShape()
+    {
+        // Arrange
+        var line = _formsPlot.Plot.Add.Line(0, 0, 10, 10);
+        _shapeManager.AddShape(line);
+        _shapeManager.Undo();
+
+        // Act
+        var result = _shapeManager.Redo();
+
+        // Assert
+        Assert.True(result);
+        Assert.Single(_shapeManager.Shapes);
+        Assert.Contains(line, _shapeManager.Shapes);
+        Assert.True(_shapeManager.CanUndo);
+        Assert.False(_shapeManager.CanRedo);
+    }
+
+    [Fact]
+    public void Undo_ReturnsFalseWhenNothingToUndo()
+    {
+        // Act
+        var result = _shapeManager.Undo();
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void Redo_ReturnsFalseWhenNothingToRedo()
+    {
+        // Act
+        var result = _shapeManager.Redo();
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void AddShape_ClearsRedoStack()
+    {
+        // Arrange
+        var line1 = _formsPlot.Plot.Add.Line(0, 0, 10, 10);
+        var line2 = _formsPlot.Plot.Add.Line(5, 5, 15, 15);
+        _shapeManager.AddShape(line1);
+        _shapeManager.Undo();
+
+        // Act
+        _shapeManager.AddShape(line2);
+
+        // Assert
+        Assert.False(_shapeManager.CanRedo);
+        Assert.Single(_shapeManager.Shapes);
+    }
+
+    [Fact]
+    public void MultipleShapes_UndoRedoSequence()
+    {
+        // Arrange
+        var line1 = _formsPlot.Plot.Add.Line(0, 0, 10, 10);
+        var line2 = _formsPlot.Plot.Add.Line(5, 5, 15, 15);
+        var line3 = _formsPlot.Plot.Add.Line(10, 10, 20, 20);
+
+        // Act
+        _shapeManager.AddShape(line1);
+        _shapeManager.AddShape(line2);
+        _shapeManager.AddShape(line3);
+
+        // Assert - all shapes added
+        Assert.Equal(3, _shapeManager.Shapes.Count);
+
+        // Act - undo twice
+        _shapeManager.Undo();
+        _shapeManager.Undo();
+
+        // Assert - only first shape remains
+        Assert.Single(_shapeManager.Shapes);
+        Assert.Contains(line1, _shapeManager.Shapes);
+
+        // Act - redo once
+        _shapeManager.Redo();
+
+        // Assert - two shapes now
+        Assert.Equal(2, _shapeManager.Shapes.Count);
+        Assert.Contains(line1, _shapeManager.Shapes);
+        Assert.Contains(line2, _shapeManager.Shapes);
+    }
+
+    [Fact]
+    public void DeleteShape_RemovesShapeFromChart()
+    {
+        // Arrange
+        var line = _formsPlot.Plot.Add.Line(0, 0, 10, 10);
+        _shapeManager.AddShape(line);
+
+        // Act
+        _shapeManager.DeleteShape(line);
+
+        // Assert
+        Assert.Empty(_shapeManager.Shapes);
+        Assert.True(_shapeManager.CanUndo);
+    }
+
+    [Fact]
+    public void DeleteShape_UndoRestoresShape()
+    {
+        // Arrange
+        var line = _formsPlot.Plot.Add.Line(0, 0, 10, 10);
+        _shapeManager.AddShape(line);
+        _shapeManager.DeleteShape(line);
+
+        // Act
+        _shapeManager.Undo();
+
+        // Assert
+        Assert.Single(_shapeManager.Shapes);
+        Assert.Contains(line, _shapeManager.Shapes);
+    }
+
+    [Fact]
+    public void DeleteShape_ThrowsExceptionForUnmanagedShape()
+    {
+        // Arrange
+        var line = _formsPlot.Plot.Add.Line(0, 0, 10, 10);
+
+        // Act & Assert
+        Assert.Throws<InvalidOperationException>(() => _shapeManager.DeleteShape(line));
     }
 }

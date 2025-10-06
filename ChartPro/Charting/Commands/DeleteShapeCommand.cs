@@ -1,5 +1,5 @@
-using ChartPro.Charting.Shapes;
 using ScottPlot;
+using ScottPlot.WinForms;
 
 namespace ChartPro.Charting.Commands;
 
@@ -8,28 +8,26 @@ namespace ChartPro.Charting.Commands;
 /// </summary>
 public class DeleteShapeCommand : ICommand
 {
-    private readonly IShapeManager _shapeManager;
-    private readonly DrawnShape _shape;
-    private readonly Plot _plot;
+    private readonly FormsPlot _formsPlot;
+    private readonly IPlottable _shape;
 
-    public string Description => $"Delete {_shape.DrawMode} shape";
+    public IPlottable Shape => _shape;
 
-    public DeleteShapeCommand(IShapeManager shapeManager, DrawnShape shape, Plot plot)
+    public DeleteShapeCommand(FormsPlot formsPlot, IPlottable shape)
     {
-        _shapeManager = shapeManager ?? throw new ArgumentNullException(nameof(shapeManager));
+        _formsPlot = formsPlot ?? throw new ArgumentNullException(nameof(formsPlot));
         _shape = shape ?? throw new ArgumentNullException(nameof(shape));
-        _plot = plot ?? throw new ArgumentNullException(nameof(plot));
     }
 
     public void Execute()
     {
-        _shapeManager.RemoveShape(_shape);
-        _plot.Remove(_shape.Plottable);
+        _formsPlot.Plot.Remove(_shape);
+        _formsPlot.Refresh();
     }
 
     public void Undo()
     {
-        _shapeManager.AddShape(_shape);
-        _plot.Add.Plottable(_shape.Plottable);
+        _formsPlot.Plot.Add.Plottable(_shape);
+        _formsPlot.Refresh();
     }
 }

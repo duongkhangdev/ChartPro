@@ -1,6 +1,7 @@
 using ChartPro.Charting.Shapes;
 using ScottPlot;
 using ScottPlot.WinForms;
+using ChartPro.Charting.ShapeManagement;
 
 namespace ChartPro.Charting.Interactions;
 
@@ -62,22 +63,7 @@ public interface IChartInteractions : IDisposable
     bool IsAttached { get; }
 
     /// <summary>
-    /// Gets the shape manager for this chart.
+    /// Gets the shape manager instance.
     /// </summary>
     IShapeManager ShapeManager { get; }
-
-    /// <summary>
-    /// Undoes the last shape operation.
-    /// </summary>
-    bool Undo();
-
-    /// <summary>
-    /// Redoes the last undone shape operation.
-    /// </summary>
-    bool Redo();
-
-    /// <summary>
-    /// Deletes the currently selected shapes.
-    /// </summary>
-    void DeleteSelectedShapes();
 }

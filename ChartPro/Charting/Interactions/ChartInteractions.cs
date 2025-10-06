@@ -3,8 +3,7 @@ using ChartPro.Charting.Shapes;
 using ScottPlot;
 using ScottPlot.WinForms;
 using System.Drawing;
-using System.Text.Json;
-using ChartPro.Charting.Models;
+using ChartPro.Charting.ShapeManagement;
 
 namespace ChartPro.Charting.Interactions;
 
@@ -14,6 +13,7 @@ namespace ChartPro.Charting.Interactions;
 /// </summary>
 public class ChartInteractions : IChartInteractions
 {
+    private readonly IShapeManager _shapeManager;
     private FormsPlot? _formsPlot;
     private int _pricePlotIndex;
     private ChartDrawMode _currentDrawMode = ChartDrawMode.None;
@@ -34,9 +34,9 @@ public class ChartInteractions : IChartInteractions
     public bool IsAttached => _isAttached;
     public IShapeManager ShapeManager => _shapeManager;
 
-    public ChartInteractions()
+    public ChartInteractions(IShapeManager shapeManager)
     {
-        _shapeManager = new ShapeManager();
+        _shapeManager = shapeManager ?? throw new ArgumentNullException(nameof(shapeManager));
     }
 
     /// <summary>
@@ -51,6 +51,9 @@ public class ChartInteractions : IChartInteractions
 
         _formsPlot = formsPlot ?? throw new ArgumentNullException(nameof(formsPlot));
         _pricePlotIndex = pricePlotIndex;
+
+        // Attach shape manager
+        _shapeManager.Attach(_formsPlot);
 
         // Hook up event handlers
         _formsPlot.MouseDown += OnMouseDown;
@@ -325,11 +328,19 @@ public class ChartInteractions : IChartInteractions
         var strategy = DrawModeStrategyFactory.CreateStrategy(_currentDrawMode);
         if (strategy != null)
         {
-            // Create a DrawnShape and add it via command pattern
-            var shape = new DrawnShape(plottable, _currentDrawMode);
-            var command = new AddShapeCommand(_shapeManager, shape, _formsPlot.Plot);
-            _shapeManager.ExecuteCommand(command);
-            _formsPlot.Refresh();
+            ChartDrawMode.TrendLine => CreateTrendLine(start, end),
+            ChartDrawMode.HorizontalLine => CreateHorizontalLine(start, end),
+            ChartDrawMode.VerticalLine => CreateVerticalLine(start, end),
+            ChartDrawMode.Rectangle => CreateRectangle(start, end),
+            ChartDrawMode.Circle => CreateCircle(start, end),
+            ChartDrawMode.FibonacciRetracement => CreateFibonacci(start, end),
+            // TODO: Implement other draw modes
+            _ => null
+        };
+
+        if (plottable != null)
+        {
+            _shapeManager.AddShape(plottable);
         }
     }
 
@@ -644,6 +655,7 @@ public class ChartInteractions : IChartInteractions
                 _formsPlot.KeyUp -= OnKeyUp;
             }
 
+            _shapeManager?.Dispose();
             _formsPlot = null;
             _boundCandles = null;
             _previewPlottable = null;

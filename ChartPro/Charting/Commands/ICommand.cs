@@ -1,7 +1,7 @@
 namespace ChartPro.Charting.Commands;
 
 /// <summary>
-/// Command interface for implementing the Command pattern for undo/redo operations.
+/// Interface for the Command pattern to support undo/redo operations.
 /// </summary>
 public interface ICommand
 {
@@ -11,12 +11,7 @@ public interface ICommand
     void Execute();
 
     /// <summary>
-    /// Undoes the command.
+    /// Undoes the command, reverting to previous state.
     /// </summary>
     void Undo();
-
-    /// <summary>
-    /// Gets a description of the command for debugging/logging.
-    /// </summary>
-    string Description { get; }
 }
