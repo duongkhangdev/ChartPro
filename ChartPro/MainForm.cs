@@ -231,30 +231,56 @@ public partial class MainForm : Form
                 e.Handled = true;
                 e.SuppressKeyPress = true;
             }
+            return;
         }
         // Ctrl+Y or Ctrl+Shift+Z - Redo
-        else if ((e.Control && e.KeyCode == Keys.Y) || (e.Control && e.Shift && e.KeyCode == Keys.Z))
+        if ((e.Control && e.KeyCode == Keys.Y) || (e.Control && e.Shift && e.KeyCode == Keys.Z))
         {
             if (_chartInteractions.Redo())
             {
                 e.Handled = true;
                 e.SuppressKeyPress = true;
             }
+            return;
         }
         // Delete - Delete selected shapes
-        else if (e.KeyCode == Keys.Delete)
+        if (e.KeyCode == Keys.Delete)
         {
             _chartInteractions.DeleteSelectedShapes();
             e.Handled = true;
             e.SuppressKeyPress = true;
+            return;
         }
         // Escape - Cancel drawing mode
-        else if (e.KeyCode == Keys.Escape)
+        if (e.KeyCode == Keys.Escape)
         {
             _chartInteractions.SetDrawMode(ChartDrawMode.None);
             UpdateButtonStyles(null!);
             e.Handled = true;
             e.SuppressKeyPress = true;
+            return;
+        }
+
+        // Handle number keys for tool selection
+        ChartDrawMode? mode = e.KeyCode switch
+        {
+            Keys.D1 or Keys.NumPad1 => ChartDrawMode.TrendLine,
+            Keys.D2 or Keys.NumPad2 => ChartDrawMode.HorizontalLine,
+            Keys.D3 or Keys.NumPad3 => ChartDrawMode.VerticalLine,
+            Keys.D4 or Keys.NumPad4 => ChartDrawMode.Rectangle,
+            Keys.D5 or Keys.NumPad5 => ChartDrawMode.Circle,
+            Keys.D6 or Keys.NumPad6 => ChartDrawMode.FibonacciRetracement,
+            _ => null
+        };
+
+        if (mode.HasValue)
+        {
+            _chartInteractions.SetDrawMode(mode.Value);
+            if (_modeButtons.TryGetValue(mode.Value, out var button))
+            {
+                UpdateButtonStyles(button);
+            }
+            e.Handled = true;
         }
     }
 
@@ -269,12 +295,6 @@ public partial class MainForm : Form
             Tag = mode
         };
         button.Click += ToolButton_Click;
-        
-        if (!string.IsNullOrEmpty(tooltip))
-        {
-            var toolTip = new ToolTip();
-            toolTip.SetToolTip(button, tooltip);
-        }
 
         // Store button reference for keyboard shortcuts
         _modeButtons[mode] = button;
@@ -338,26 +358,6 @@ public partial class MainForm : Form
         _chartInteractions.Dispose();
     }
 
-    private void MainForm_KeyDown(object? sender, KeyEventArgs e)
-    {
-        // Undo: Ctrl+Z
-        if (e.Control && e.KeyCode == Keys.Z)
-        {
-            if (_chartInteractions.ShapeManager.Undo())
-            {
-                e.Handled = true;
-            }
-        }
-        // Redo: Ctrl+Y
-        else if (e.Control && e.KeyCode == Keys.Y)
-        {
-            if (_chartInteractions.ShapeManager.Redo())
-            {
-                e.Handled = true;
-            }
-        }
-    }
-
     private void GenerateSampleData()
     {
         if (_formsPlot == null)
@@ -397,43 +397,16 @@ public partial class MainForm : Form
         return candles;
     }
 
-    private void MainForm_KeyDown(object? sender, KeyEventArgs e)
+    private void SaveAnnotations()
     {
-        // Handle ESC key to cancel drawing
-        if (e.KeyCode == Keys.Escape)
-        {
-            _chartInteractions.SetDrawMode(ChartDrawMode.None);
-            if (_modeButtons.TryGetValue(ChartDrawMode.None, out var button))
-            {
-                UpdateButtonStyles(button);
-            }
-            e.Handled = true;
-            return;
-        }
+        // TODO: Implement save annotations functionality
+        MessageBox.Show("Save annotations feature is not yet implemented.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
 
-        // Handle number keys for tool selection
-        ChartDrawMode? mode = e.KeyCode switch
-        {
-            Keys.D1 or Keys.NumPad1 => ChartDrawMode.TrendLine,
-            Keys.D2 or Keys.NumPad2 => ChartDrawMode.HorizontalLine,
-            Keys.D3 or Keys.NumPad3 => ChartDrawMode.VerticalLine,
-            Keys.D4 or Keys.NumPad4 => ChartDrawMode.Rectangle,
-            Keys.D5 or Keys.NumPad5 => ChartDrawMode.Circle,
-            Keys.D6 or Keys.NumPad6 => ChartDrawMode.FibonacciRetracement,
-            _ => null
-        };
-
-        if (mode.HasValue)
-        {
-            _chartInteractions.SetDrawMode(mode.Value);
-            if (_modeButtons.TryGetValue(mode.Value, out var button))
-            {
-                UpdateButtonStyles(button);
-            }
-            e.Handled = true;
-        }
-
-        // TODO: Implement Ctrl+Z (Undo) and Ctrl+Y (Redo) in future
+    private void LoadAnnotations()
+    {
+        // TODO: Implement load annotations functionality
+        MessageBox.Show("Load annotations feature is not yet implemented.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void OnDrawModeChanged(object? sender, ChartDrawMode mode)

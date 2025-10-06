@@ -66,4 +66,54 @@ public interface IChartInteractions : IDisposable
     /// Gets the shape manager instance.
     /// </summary>
     IShapeManager ShapeManager { get; }
+
+    /// <summary>
+    /// Gets or sets whether snap functionality is enabled.
+    /// </summary>
+    bool SnapEnabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets the snap mode.
+    /// </summary>
+    SnapMode SnapMode { get; set; }
+
+    /// <summary>
+    /// Gets the current mouse coordinates.
+    /// </summary>
+    Coordinates? CurrentMouseCoordinates { get; }
+
+    /// <summary>
+    /// Gets the current shape information.
+    /// </summary>
+    string? CurrentShapeInfo { get; }
+
+    /// <summary>
+    /// Event raised when the drawing mode changes.
+    /// </summary>
+    event EventHandler<ChartDrawMode>? DrawModeChanged;
+
+    /// <summary>
+    /// Event raised when the mouse coordinates change.
+    /// </summary>
+    event EventHandler<Coordinates>? MouseCoordinatesChanged;
+
+    /// <summary>
+    /// Event raised when the shape information changes.
+    /// </summary>
+    event EventHandler<string>? ShapeInfoChanged;
+
+    /// <summary>
+    /// Undoes the last action.
+    /// </summary>
+    bool Undo();
+
+    /// <summary>
+    /// Redoes the last undone action.
+    /// </summary>
+    bool Redo();
+
+    /// <summary>
+    /// Deletes the selected shapes.
+    /// </summary>
+    void DeleteSelectedShapes();
 }
