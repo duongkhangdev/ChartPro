@@ -155,26 +155,12 @@ The project includes a GitHub Actions workflow (`.github/workflows/build-and-rel
 - Creates source code archives
 - Attaches artifacts to releases (on tag push)
 
-## Fibonacci Tools
+## Repository Configuration
 
-The application includes comprehensive Fibonacci analysis tools:
-
-### Fibonacci Retracement
-- **Levels**: 0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0
-- **Usage**: Draw from swing high to swing low (or vice versa)
-- **Features**: 
-  - Color-coded levels for easy identification
-  - Price labels showing both ratio and actual price value
-  - Real-time preview while drawing
-  - Automatic direction detection (uptrend/downtrend)
-
-### Fibonacci Extension
-- **Levels**: All retracement levels plus 1.272, 1.618, 2.0, 2.618
-- **Usage**: Draw from trend start to trend end to project extension targets
-- **Features**: 
-  - Extended levels for projection targets
-  - Same color-coding and labeling as retracement
-  - Useful for identifying potential profit targets
+The repository is configured with best practices for maintenance and collaboration:
+- **Automatic Branch Deletion**: Enabled - head branches are automatically deleted after PR merge
+- **Settings as Code**: Repository settings are defined in `.github/settings.yml`
+- See [REPOSITORY_SETTINGS.md](REPOSITORY_SETTINGS.md) for complete configuration documentation
 
 ## TODO / Future Enhancements
 
