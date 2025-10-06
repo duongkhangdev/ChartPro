@@ -1,6 +1,7 @@
 using ScottPlot;
 using ScottPlot.WinForms;
 using System.Drawing;
+using ChartPro.Charting.Interactions.Strategies;
 
 namespace ChartPro.Charting.Interactions;
 
@@ -350,21 +351,11 @@ public class ChartInteractions : IChartInteractions
         // Clear previous preview
         ClearPreview();
 
-        // Create preview based on draw mode
-        _previewPlottable = _currentDrawMode switch
+        // Use strategy pattern to create preview
+        var strategy = DrawModeStrategyFactory.CreateStrategy(_currentDrawMode);
+        if (strategy != null)
         {
-            ChartDrawMode.TrendLine => CreateTrendLinePreview(start, end),
-            ChartDrawMode.HorizontalLine => CreateHorizontalLinePreview(start, end),
-            ChartDrawMode.VerticalLine => CreateVerticalLinePreview(start, end),
-            ChartDrawMode.Rectangle => CreateRectanglePreview(start, end),
-            ChartDrawMode.Circle => CreateCirclePreview(start, end),
-            ChartDrawMode.FibonacciRetracement => CreateFibonacciPreview(start, end),
-            // TODO: Implement other draw modes (FibonacciExtension, Channel, Triangle, Text)
-            _ => null
-        };
-
-        if (_previewPlottable != null)
-        {
+            _previewPlottable = strategy.CreatePreview(start, end, _formsPlot.Plot);
             _formsPlot.Plot.Add.Plottable(_previewPlottable);
             _formsPlot.Refresh();
         }
@@ -385,147 +376,17 @@ public class ChartInteractions : IChartInteractions
         if (_formsPlot == null)
             return;
 
-        // Create permanent plottable based on draw mode
-        IPlottable? plottable = _currentDrawMode switch
+        // Use strategy pattern to create final shape
+        var strategy = DrawModeStrategyFactory.CreateStrategy(_currentDrawMode);
+        if (strategy != null)
         {
-            ChartDrawMode.TrendLine => CreateTrendLine(start, end),
-            ChartDrawMode.HorizontalLine => CreateHorizontalLine(start, end),
-            ChartDrawMode.VerticalLine => CreateVerticalLine(start, end),
-            ChartDrawMode.Rectangle => CreateRectangle(start, end),
-            ChartDrawMode.Circle => CreateCircle(start, end),
-            ChartDrawMode.FibonacciRetracement => CreateFibonacci(start, end),
-            // TODO: Implement other draw modes
-            _ => null
-        };
-
-        if (plottable != null)
-        {
+            var plottable = strategy.CreateFinal(start, end, _formsPlot.Plot);
             _formsPlot.Plot.Add.Plottable(plottable);
             _formsPlot.Refresh();
         }
     }
 
-    private IPlottable CreateTrendLinePreview(Coordinates start, Coordinates end)
-    {
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 1;
-        line.LineColor = Colors.Gray.WithAlpha(0.5);
-        return line;
-    }
 
-    private IPlottable CreateTrendLine(Coordinates start, Coordinates end)
-    {
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 2;
-        line.LineColor = Colors.Blue;
-        return line;
-    }
-
-    private IPlottable CreateHorizontalLinePreview(Coordinates start, Coordinates end)
-    {
-        var hLine = _formsPlot!.Plot.Add.HorizontalLine(end.Y);
-        hLine.LineWidth = 1;
-        hLine.LineColor = Colors.Gray.WithAlpha(0.5);
-        return hLine;
-    }
-
-    private IPlottable CreateHorizontalLine(Coordinates start, Coordinates end)
-    {
-        var hLine = _formsPlot!.Plot.Add.HorizontalLine(end.Y);
-        hLine.LineWidth = 2;
-        hLine.LineColor = Colors.Green;
-        return hLine;
-    }
-
-    private IPlottable CreateVerticalLinePreview(Coordinates start, Coordinates end)
-    {
-        var vLine = _formsPlot!.Plot.Add.VerticalLine(end.X);
-        vLine.LineWidth = 1;
-        vLine.LineColor = Colors.Gray.WithAlpha(0.5);
-        return vLine;
-    }
-
-    private IPlottable CreateVerticalLine(Coordinates start, Coordinates end)
-    {
-        var vLine = _formsPlot!.Plot.Add.VerticalLine(end.X);
-        vLine.LineWidth = 2;
-        vLine.LineColor = Colors.Orange;
-        return vLine;
-    }
-
-    private IPlottable CreateRectanglePreview(Coordinates start, Coordinates end)
-    {
-        var rect = _formsPlot!.Plot.Add.Rectangle(
-            Math.Min(start.X, end.X),
-            Math.Max(start.X, end.X),
-            Math.Min(start.Y, end.Y),
-            Math.Max(start.Y, end.Y));
-        rect.LineWidth = 1;
-        rect.LineColor = Colors.Gray.WithAlpha(0.5);
-        rect.FillColor = Colors.Gray.WithAlpha(0.1);
-        return rect;
-    }
-
-    private IPlottable CreateRectangle(Coordinates start, Coordinates end)
-    {
-        var rect = _formsPlot!.Plot.Add.Rectangle(
-            Math.Min(start.X, end.X),
-            Math.Max(start.X, end.X),
-            Math.Min(start.Y, end.Y),
-            Math.Max(start.Y, end.Y));
-        rect.LineWidth = 2;
-        rect.LineColor = Colors.Purple;
-        rect.FillColor = Colors.Purple.WithAlpha(0.1);
-        return rect;
-    }
-
-    private IPlottable CreateCirclePreview(Coordinates start, Coordinates end)
-    {
-        var centerX = (start.X + end.X) / 2;
-        var centerY = (start.Y + end.Y) / 2;
-        var radiusX = Math.Abs(end.X - start.X) / 2;
-        var radiusY = Math.Abs(end.Y - start.Y) / 2;
-        
-        var circle = _formsPlot!.Plot.Add.Ellipse(centerX, centerY, radiusX, radiusY);
-        circle.LineWidth = 1;
-        circle.LineColor = Colors.Gray.WithAlpha(0.5);
-        circle.FillColor = Colors.Gray.WithAlpha(0.1);
-        return circle;
-    }
-
-    private IPlottable CreateCircle(Coordinates start, Coordinates end)
-    {
-        var centerX = (start.X + end.X) / 2;
-        var centerY = (start.Y + end.Y) / 2;
-        var radiusX = Math.Abs(end.X - start.X) / 2;
-        var radiusY = Math.Abs(end.Y - start.Y) / 2;
-        
-        var circle = _formsPlot!.Plot.Add.Ellipse(centerX, centerY, radiusX, radiusY);
-        circle.LineWidth = 2;
-        circle.LineColor = Colors.Cyan;
-        circle.FillColor = Colors.Cyan.WithAlpha(0.1);
-        return circle;
-    }
-
-    private IPlottable CreateFibonacciPreview(Coordinates start, Coordinates end)
-    {
-        // TODO: Implement full Fibonacci retracement with levels (0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0)
-        // For now, create a simple line as preview
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 1;
-        line.LineColor = Colors.Gold.WithAlpha(0.5);
-        return line;
-    }
-
-    private IPlottable CreateFibonacci(Coordinates start, Coordinates end)
-    {
-        // TODO: Implement full Fibonacci retracement with levels and labels
-        // For now, create a simple line
-        var line = _formsPlot!.Plot.Add.Line(start, end);
-        line.LineWidth = 2;
-        line.LineColor = Colors.Gold;
-        return line;
-    }
 
     #endregion
 

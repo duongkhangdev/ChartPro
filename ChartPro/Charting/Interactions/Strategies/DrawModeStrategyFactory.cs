@@ -1,27 +1,27 @@
 namespace ChartPro.Charting.Interactions.Strategies;
 
+/// <summary>
+/// Factory for creating draw mode strategy instances.
+/// </summary>
 public class DrawModeStrategyFactory
 {
-    private readonly IInteractionContext _ctx;
-
-    public DrawModeStrategyFactory(IInteractionContext ctx) => _ctx = ctx;
-
-    public IDrawModeStrategy Create(ChartDrawMode mode) => mode switch
+    /// <summary>
+    /// Creates a strategy instance for the specified draw mode.
+    /// </summary>
+    /// <param name="mode">The draw mode</param>
+    /// <returns>Strategy instance, or null if mode is None or not implemented</returns>
+    public static IDrawModeStrategy? CreateStrategy(ChartDrawMode mode)
     {
-        ChartDrawMode.TrendLine => new TrendLineStrategy(_ctx),
-        ChartDrawMode.HorizontalLine => new HorizontalLineStrategy(_ctx),
-        ChartDrawMode.VerticalLine => new VerticalLineStrategy(_ctx),
-        ChartDrawMode.Rectangle => new RectangleStrategy(_ctx),
-        ChartDrawMode.Circle => new CircleStrategy(_ctx),
-        ChartDrawMode.FibonacciRetracement => new FibonacciRetracementStrategy(_ctx),
-        _ => new NoopStrategy(_ctx),
-    };
-
-    private sealed class NoopStrategy : BaseDrawStrategy
-    {
-        public NoopStrategy(IInteractionContext ctx) : base(ctx) { }
-        public override void OnMouseDown(ScottPlot.Coordinates coords) { }
-        public override void OnMouseMove(ScottPlot.Coordinates coords) { }
-        public override void OnMouseUp(ScottPlot.Coordinates coords) { }
+        return mode switch
+        {
+            ChartDrawMode.TrendLine => new TrendLineStrategy(),
+            ChartDrawMode.HorizontalLine => new HorizontalLineStrategy(),
+            ChartDrawMode.VerticalLine => new VerticalLineStrategy(),
+            ChartDrawMode.Rectangle => new RectangleStrategy(),
+            ChartDrawMode.Circle => new CircleStrategy(),
+            ChartDrawMode.FibonacciRetracement => new FibonacciRetracementStrategy(),
+            // TODO: Implement strategies for FibonacciExtension, Channel, Triangle, Text
+            _ => null
+        };
     }
 }
