@@ -399,14 +399,67 @@ public partial class MainForm : Form
 
     private void SaveAnnotations()
     {
-        // TODO: Implement save annotations functionality
-        MessageBox.Show("Save annotations feature is not yet implemented.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        using var saveFileDialog = new SaveFileDialog
+        {
+            Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+            FilterIndex = 1,
+            RestoreDirectory = true,
+            Title = "Save Annotations",
+            DefaultExt = "json",
+            FileName = "annotations.json"
+        };
+
+        if (saveFileDialog.ShowDialog() == DialogResult.OK)
+        {
+            try
+            {
+                _chartInteractions.SaveShapesToFile(saveFileDialog.FileName);
+                MessageBox.Show($"Annotations saved successfully to:\n{saveFileDialog.FileName}", 
+                    "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save annotations:\n{ex.Message}", 
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 
     private void LoadAnnotations()
     {
-        // TODO: Implement load annotations functionality
-        MessageBox.Show("Load annotations feature is not yet implemented.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        using var openFileDialog = new OpenFileDialog
+        {
+            Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+            FilterIndex = 1,
+            RestoreDirectory = true,
+            Title = "Load Annotations",
+            DefaultExt = "json"
+        };
+
+        if (openFileDialog.ShowDialog() == DialogResult.OK)
+        {
+            try
+            {
+                _chartInteractions.LoadShapesFromFile(openFileDialog.FileName);
+                MessageBox.Show($"Annotations loaded successfully from:\n{openFileDialog.FileName}", 
+                    "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (FileNotFoundException ex)
+            {
+                MessageBox.Show($"File not found:\n{ex.Message}", 
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (System.Text.Json.JsonException ex)
+            {
+                MessageBox.Show($"Invalid JSON format:\n{ex.Message}", 
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load annotations:\n{ex.Message}", 
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
     }
 
     private void OnDrawModeChanged(object? sender, ChartDrawMode mode)

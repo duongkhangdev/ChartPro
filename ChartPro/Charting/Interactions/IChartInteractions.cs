@@ -118,4 +118,16 @@ public interface IChartInteractions : IDisposable
     /// Deletes the selected shapes.
     /// </summary>
     void DeleteSelectedShapes();
+
+    /// <summary>
+    /// Saves all drawn shapes to a JSON file.
+    /// </summary>
+    /// <param name="filePath">The file path to save to</param>
+    void SaveShapesToFile(string filePath);
+
+    /// <summary>
+    /// Loads shapes from a JSON file and adds them to the chart.
+    /// </summary>
+    /// <param name="filePath">The file path to load from</param>
+    void LoadShapesFromFile(string filePath);
 }
