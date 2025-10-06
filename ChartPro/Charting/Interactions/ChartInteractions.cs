@@ -6,7 +6,6 @@ using System.Text.Json;
 using System.Windows.Forms;
 using ChartPro.Charting.Models;
 using ChartPro.Charting.ShapeManagement;
-using ChartPro.Charting.Shapes;
 using ChartPro.Charting.Interactions.Strategies;
 using ScottPlot;
 using ScottPlot.WinForms;
@@ -26,7 +25,8 @@ public class ChartInteractions : IChartInteractions, IDisposable
     private List<OHLC>? _boundCandles;
     private bool _isAttached;
     private bool _disposed;
-    private bool _shiftKeyPressed;
+    private bool _snapEnabled;
+    private SnapMode _snapMode = SnapMode.None;
 
     // Drawing state
     private Coordinates? _drawStartCoordinates;
@@ -43,6 +43,8 @@ public class ChartInteractions : IChartInteractions, IDisposable
     public IShapeManager ShapeManager => _shapeManager;
     public Coordinates? CurrentMouseCoordinates => _currentMouseCoordinates;
     public string? CurrentShapeInfo => _currentShapeInfo;
+    public bool SnapEnabled { get => _snapEnabled; set => _snapEnabled = value; }
+    public SnapMode SnapMode { get => _snapMode; set => _snapMode = value; }
 
     // Events
     public event EventHandler<ChartDrawMode>? DrawModeChanged;
@@ -62,14 +64,13 @@ public class ChartInteractions : IChartInteractions, IDisposable
         if (_isAttached)
             throw new InvalidOperationException("Already attached to a FormsPlot control. Call Dispose first.");
 
-        // Fix: nameof(forms_plot) -> nameof(formsPlot)
         _formsPlot = formsPlot ?? throw new ArgumentNullException(nameof(formsPlot));
         _pricePlotIndex = pricePlotIndex;
 
         // Attach shape manager
         _shapeManager.Attach(_formsPlot);
 
-        // Fix: _forms_plot -> _formsPlot
+        // Hook up event handlers
         _formsPlot.MouseDown += OnMouseDown;
         _formsPlot.MouseMove += OnMouseMove;
         _formsPlot.MouseUp += OnMouseUp;
@@ -143,14 +144,12 @@ public class ChartInteractions : IChartInteractions, IDisposable
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode == Keys.ShiftKey)
-            _shiftKeyPressed = true;
+        // Reserved for future keyboard shortcuts
     }
 
     private void OnKeyUp(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode == Keys.ShiftKey)
-            _shiftKeyPressed = false;
+        // Reserved for future keyboard shortcuts
     }
 
     private void OnMouseDown(object? sender, MouseEventArgs e)
@@ -413,77 +412,9 @@ public class ChartInteractions : IChartInteractions, IDisposable
 
     private void HandleShapeSelection(int pixelX, int pixelY, Keys modifiers)
     {
-        if (_formsPlot == null)
-            return;
-
-        var coordinates = _formsPlot.Plot.GetCoordinates(pixelX, pixelY);
-        var clickedShape = FindShapeNearPoint(coordinates);
-
-        bool isCtrlPressed = modifiers.HasFlag(Keys.Control);
-
-        if (clickedShape != null)
-        {
-            if (!isCtrlPressed)
-            {
-                foreach (var shape in _shapeManager.Shapes)
-                    if (shape != clickedShape)
-                        shape.IsSelected = false;
-            }
-
-            clickedShape.IsSelected = !clickedShape.IsSelected;
-        }
-        else if (!isCtrlPressed)
-        {
-            foreach (var shape in _shapeManager.Shapes)
-                shape.IsSelected = false;
-        }
-
-        UpdateShapeVisuals();
-        _formsPlot.Refresh();
-    }
-
-    private DrawnShape? FindShapeNearPoint(Coordinates coordinates)
-    {
-        if (_formsPlot == null)
-            return null;
-
-        const double SELECTION_TOLERANCE = 10.0;
-
-        for (int i = _shapeManager.Shapes.Count - 1; i >= 0; i--)
-        {
-            var shape = _shapeManager.Shapes[i];
-            if (!shape.IsVisible)
-                continue;
-
-            if (IsPointNearPlottable(shape.Plottable, coordinates, SELECTION_TOLERANCE))
-                return shape;
-        }
-
-        return null;
-    }
-
-    private bool IsPointNearPlottable(IPlottable plottable, Coordinates coordinates, double tolerance)
-    {
-        try
-        {
-            var bounds = plottable.GetAxisLimits();
-
-            double margin = (bounds.Rect.Width + bounds.Rect.Height) * 0.02;
-
-            return coordinates.X >= bounds.Rect.Left - margin - tolerance &&
-                   coordinates.X <= bounds.Rect.Right + margin + tolerance &&
-                   coordinates.Y >= bounds.Rect.Bottom - margin - tolerance &&
-                   coordinates.Y <= bounds.Rect.Top + margin + tolerance;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private void UpdateShapeVisuals()
-    {
-        // Optional: styling for selected shapes
+        // TODO: Implement shape selection functionality
+        // This requires extending IPlottable or wrapping shapes with metadata
+        // For now, shape selection is not implemented
     }
 
     #endregion
