@@ -62,18 +62,19 @@ public class ChartInteractions : IChartInteractions, IDisposable
         if (_isAttached)
             throw new InvalidOperationException("Already attached to a FormsPlot control. Call Dispose first.");
 
-        _formsPlot = formsPlot ?? throw new ArgumentNullException(nameof(forms_plot));
+        // Fix: nameof(forms_plot) -> nameof(formsPlot)
+        _formsPlot = formsPlot ?? throw new ArgumentNullException(nameof(formsPlot));
         _pricePlotIndex = pricePlotIndex;
 
         // Attach shape manager
         _shapeManager.Attach(_formsPlot);
 
-        // Hook up event handlers
-        _forms_plot.MouseDown += OnMouseDown;
-        _forms_plot.MouseMove += OnMouseMove;
-        _forms_plot.MouseUp += OnMouseUp;
-        _forms_plot.KeyDown += OnKeyDown;
-        _forms_plot.KeyUp += OnKeyUp;
+        // Fix: _forms_plot -> _formsPlot
+        _formsPlot.MouseDown += OnMouseDown;
+        _formsPlot.MouseMove += OnMouseMove;
+        _formsPlot.MouseUp += OnMouseUp;
+        _formsPlot.KeyDown += OnKeyDown;
+        _formsPlot.KeyUp += OnKeyUp;
 
         _isAttached = true;
     }
@@ -511,6 +512,7 @@ public class ChartInteractions : IChartInteractions, IDisposable
 
     public void DeleteSelectedShapes()
     {
+        // Optional: implement delete behavior via shape manager if supported
         _formsPlot?.Refresh();
     }
 
