@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using ChartPro.Charting.Shapes;
 using ScottPlot;
 using ScottPlot.WinForms;
