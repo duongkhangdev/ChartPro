@@ -11,6 +11,9 @@
 | `4` | Rectangle | Activates rectangle drawing tool |
 | `5` | Circle | Activates circle drawing tool |
 | `6` | Fibonacci | Activates Fibonacci retracement tool |
+| `Ctrl+Z` | Undo | Undoes the last drawing operation |
+| `Ctrl+Y` or `Ctrl+Shift+Z` | Redo | Redoes the last undone operation |
+| `Delete` | Delete Selected | Deletes currently selected shapes |
 
 ## Usage
 
@@ -81,12 +84,34 @@ Hover over any toolbar button to see a tooltip with:
 - Brief description of the tool
 - Keyboard shortcut in parentheses
 
+## Undo/Redo Operations
+
+### Undo
+Press `Ctrl+Z` to:
+- Undo the last drawing operation
+- Remove the most recently added shape
+- Works recursively - press multiple times to undo multiple operations
+- Unavailable when there are no operations to undo
+
+### Redo
+Press `Ctrl+Y` or `Ctrl+Shift+Z` to:
+- Redo the last undone operation
+- Restore the most recently removed shape
+- Works recursively - press multiple times to redo multiple operations
+- Unavailable when there are no operations to redo
+- Redo history is cleared when a new shape is drawn
+
+### Delete Selected
+Press `Delete` to:
+- Delete currently selected shapes from the chart
+- Note: Shape selection feature is planned for future implementation
+
 ## Future Enhancements
 
-Planned keyboard shortcuts:
-- `Ctrl+Z` - Undo last shape
-- `Ctrl+Y` - Redo last undone shape
-- `Delete` - Remove selected shape
+Planned features:
+- Shape selection and editing
+- Save/Load annotations to file
+- Additional keyboard shortcuts for advanced operations
 
 ## Tips
 
