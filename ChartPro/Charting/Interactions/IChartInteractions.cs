@@ -1,3 +1,4 @@
+using ChartPro.Charting.Shapes;
 using ScottPlot;
 using ScottPlot.WinForms;
 using ChartPro.Charting.ShapeManagement;

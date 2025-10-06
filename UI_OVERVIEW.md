@@ -79,6 +79,12 @@ The ChartPro application features a clean, professional interface designed for t
 6. **Circle** - Draw circular/elliptical shapes
 7. **Fibonacci** - Draw Fibonacci retracement
 
+**Snap/Magnet Controls**:
+- **Enable Snap (or hold Shift)** - Checkbox to enable snap functionality
+- **No Snap** - Radio button for no snapping (default)
+- **Snap to Price Grid** - Radio button to snap to rounded price levels
+- **Snap to Candle OHLC** - Radio button to snap to nearest candle's OHLC values
+
 **Special Button**:
 - **Generate Sample Data** - Creates 100 random OHLC candles
 
@@ -196,13 +202,16 @@ _chartInteractions.AddCandle(newCandle);
 **Current State**:
 - Standard Windows Forms controls (accessible by default)
 - Keyboard navigation between toolbar buttons (Tab key)
-- ToolTips could be added for better UX
+- ToolTips on all toolbar buttons with descriptions
+- Keyboard shortcuts for all drawing tools (1-6, ESC)
+- Status bar showing current mode, coordinates, and shape info
 
-**Improvements Possible**:
-- Add ToolTips to buttons
-- Add keyboard shortcuts
-- Add status bar showing current mode
-- Add coordinate display on mouse hover
+**Features**:
+- ToolTips on all buttons explain their function
+- Keyboard shortcuts displayed in button text
+- Status bar provides real-time feedback during drawing
+- Coordinate display updates on mouse move
+- Shape parameters (length, angle, size) shown during drawing
 
 ## Performance
 
@@ -217,14 +226,33 @@ _chartInteractions.AddCandle(newCandle);
 - Event handlers properly managed
 - No memory leaks (IDisposable pattern)
 
+## Components
+
+### 3. Status Bar (Bottom)
+
+**Type**: StatusStrip  
+**Docked**: Bottom
+
+**Labels**:
+1. **Mode Label** - Shows current drawing mode (e.g., "Mode: Trend Line")
+2. **Coordinates Label** - Shows mouse position (e.g., "X: 123.45, Y: 67.89")
+3. **Shape Info Label** - Shows shape parameters during drawing:
+   - Trend Line: Length and angle
+   - Horizontal Line: Price level
+   - Vertical Line: Time position
+   - Rectangle: Width and height
+   - Circle: Radius X and Y
+   - Fibonacci: Range
+
+**Updates**:
+- Mode label updates when drawing tool changes
+- Coordinates update in real-time on mouse move
+- Shape info appears only during drawing preview
+
 ## Future Enhancements
 
 Planned UI improvements:
-1. Status bar showing:
-   - Current draw mode
-   - Mouse coordinates
-   - Number of shapes drawn
-2. Context menu for shape management:
+1. Context menu for shape management:
    - Delete shape
    - Edit properties
    - Change color
