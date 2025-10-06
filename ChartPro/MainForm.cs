@@ -142,24 +142,25 @@ public partial class MainForm : Form
         btnGenerateSampleData.Click += (s, e) => GenerateSampleData();
 
         yPos += 40;
-        var btnSaveAnnotations = new Button
-        {
-            Text = "Save Annotations",
-            Location = new Point(10, yPos),
-            Width = 180,
-            Height = 30
-        };
-        btnSaveAnnotations.Click += (s, e) => SaveAnnotations();
-
-        yPos += 35;
-        var btnLoadAnnotations = new Button
-        {
-            Text = "Load Annotations",
-            Location = new Point(10, yPos),
-            Width = 180,
-            Height = 30
-        };
-        btnLoadAnnotations.Click += (s, e) => LoadAnnotations();
+        // TODO: Implement Save/Load Annotations
+        // var btnSaveAnnotations = new Button
+        // {
+        //     Text = "Save Annotations",
+        //     Location = new Point(10, yPos),
+        //     Width = 180,
+        //     Height = 30
+        // };
+        // btnSaveAnnotations.Click += (s, e) => SaveAnnotations();
+        //
+        // yPos += 35;
+        // var btnLoadAnnotations = new Button
+        // {
+        //     Text = "Load Annotations",
+        //     Location = new Point(10, yPos),
+        //     Width = 180,
+        //     Height = 30
+        // };
+        // btnLoadAnnotations.Click += (s, e) => LoadAnnotations();
 
         toolbarPanel.Controls.Add(btnNone);
         toolbarPanel.Controls.Add(btnTrendLine);
@@ -170,8 +171,8 @@ public partial class MainForm : Form
         toolbarPanel.Controls.Add(btnFibonacci);
         toolbarPanel.Controls.Add(btnFibExtension);
         toolbarPanel.Controls.Add(btnGenerateSampleData);
-        toolbarPanel.Controls.Add(btnSaveAnnotations);
-        toolbarPanel.Controls.Add(btnLoadAnnotations);
+        // toolbarPanel.Controls.Add(btnSaveAnnotations);
+        // toolbarPanel.Controls.Add(btnLoadAnnotations);
 
         // Create status bar
         _statusStrip = new StatusStrip
@@ -252,9 +253,36 @@ public partial class MainForm : Form
         else if (e.KeyCode == Keys.Escape)
         {
             _chartInteractions.SetDrawMode(ChartDrawMode.None);
-            UpdateButtonStyles(null!);
+            if (_modeButtons.TryGetValue(ChartDrawMode.None, out var noneButton))
+            {
+                UpdateButtonStyles(noneButton);
+            }
             e.Handled = true;
             e.SuppressKeyPress = true;
+        }
+        // Handle number keys for tool selection
+        else
+        {
+            ChartDrawMode? mode = e.KeyCode switch
+            {
+                Keys.D1 or Keys.NumPad1 => ChartDrawMode.TrendLine,
+                Keys.D2 or Keys.NumPad2 => ChartDrawMode.HorizontalLine,
+                Keys.D3 or Keys.NumPad3 => ChartDrawMode.VerticalLine,
+                Keys.D4 or Keys.NumPad4 => ChartDrawMode.Rectangle,
+                Keys.D5 or Keys.NumPad5 => ChartDrawMode.Circle,
+                Keys.D6 or Keys.NumPad6 => ChartDrawMode.FibonacciRetracement,
+                _ => null
+            };
+
+            if (mode.HasValue)
+            {
+                _chartInteractions.SetDrawMode(mode.Value);
+                if (_modeButtons.TryGetValue(mode.Value, out var button))
+                {
+                    UpdateButtonStyles(button);
+                }
+                e.Handled = true;
+            }
         }
     }
 
@@ -269,12 +297,6 @@ public partial class MainForm : Form
             Tag = mode
         };
         button.Click += ToolButton_Click;
-        
-        if (!string.IsNullOrEmpty(tooltip))
-        {
-            var toolTip = new ToolTip();
-            toolTip.SetToolTip(button, tooltip);
-        }
 
         // Store button reference for keyboard shortcuts
         _modeButtons[mode] = button;
@@ -338,26 +360,6 @@ public partial class MainForm : Form
         _chartInteractions.Dispose();
     }
 
-    private void MainForm_KeyDown(object? sender, KeyEventArgs e)
-    {
-        // Undo: Ctrl+Z
-        if (e.Control && e.KeyCode == Keys.Z)
-        {
-            if (_chartInteractions.ShapeManager.Undo())
-            {
-                e.Handled = true;
-            }
-        }
-        // Redo: Ctrl+Y
-        else if (e.Control && e.KeyCode == Keys.Y)
-        {
-            if (_chartInteractions.ShapeManager.Redo())
-            {
-                e.Handled = true;
-            }
-        }
-    }
-
     private void GenerateSampleData()
     {
         if (_formsPlot == null)
@@ -395,45 +397,6 @@ public partial class MainForm : Form
         }
 
         return candles;
-    }
-
-    private void MainForm_KeyDown(object? sender, KeyEventArgs e)
-    {
-        // Handle ESC key to cancel drawing
-        if (e.KeyCode == Keys.Escape)
-        {
-            _chartInteractions.SetDrawMode(ChartDrawMode.None);
-            if (_modeButtons.TryGetValue(ChartDrawMode.None, out var button))
-            {
-                UpdateButtonStyles(button);
-            }
-            e.Handled = true;
-            return;
-        }
-
-        // Handle number keys for tool selection
-        ChartDrawMode? mode = e.KeyCode switch
-        {
-            Keys.D1 or Keys.NumPad1 => ChartDrawMode.TrendLine,
-            Keys.D2 or Keys.NumPad2 => ChartDrawMode.HorizontalLine,
-            Keys.D3 or Keys.NumPad3 => ChartDrawMode.VerticalLine,
-            Keys.D4 or Keys.NumPad4 => ChartDrawMode.Rectangle,
-            Keys.D5 or Keys.NumPad5 => ChartDrawMode.Circle,
-            Keys.D6 or Keys.NumPad6 => ChartDrawMode.FibonacciRetracement,
-            _ => null
-        };
-
-        if (mode.HasValue)
-        {
-            _chartInteractions.SetDrawMode(mode.Value);
-            if (_modeButtons.TryGetValue(mode.Value, out var button))
-            {
-                UpdateButtonStyles(button);
-            }
-            e.Handled = true;
-        }
-
-        // TODO: Implement Ctrl+Z (Undo) and Ctrl+Y (Redo) in future
     }
 
     private void OnDrawModeChanged(object? sender, ChartDrawMode mode)

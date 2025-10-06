@@ -27,4 +27,8 @@ public abstract class BaseDrawStrategy : IDrawModeStrategy
     public abstract void OnMouseUp(Coordinates coords);
 
     protected Coordinates MaybeSnap(Coordinates c) => Ctx.ApplySnap(c);
+
+    // Default implementations for interface methods (not used in current architecture but required by interface)
+    public abstract IPlottable CreatePreview(Coordinates start, Coordinates end, Plot plot);
+    public abstract IPlottable CreateFinal(Coordinates start, Coordinates end, Plot plot);
 }
