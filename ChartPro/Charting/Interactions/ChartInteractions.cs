@@ -22,27 +22,17 @@ public class ChartInteractions : IChartInteractions
     // Drawing state
     private Coordinates? _drawStartCoordinates;
     private IPlottable? _previewPlottable;
-    
-    // Track drawn shapes with their metadata
-    private readonly List<(IPlottable plottable, ShapeAnnotation metadata)> _drawnShapes = new();
-
-    // Snap/magnet state
-    private bool _snapEnabled = false;
-    private SnapMode _snapMode = SnapMode.None;
-    private bool _shiftKeyPressed = false;
+    private Coordinates? _currentMouseCoordinates;
+    private string? _currentShapeInfo;
 
     public ChartDrawMode CurrentDrawMode => _currentDrawMode;
     public bool IsAttached => _isAttached;
-    public bool SnapEnabled 
-    { 
-        get => _snapEnabled; 
-        set => _snapEnabled = value; 
-    }
-    public SnapMode SnapMode 
-    { 
-        get => _snapMode; 
-        set => _snapMode = value; 
-    }
+    public Coordinates? CurrentMouseCoordinates => _currentMouseCoordinates;
+    public string? CurrentShapeInfo => _currentShapeInfo;
+
+    public event EventHandler<ChartDrawMode>? DrawModeChanged;
+    public event EventHandler<Coordinates>? MouseCoordinatesChanged;
+    public event EventHandler<string>? ShapeInfoChanged;
 
     /// <summary>
     /// Attaches the interaction service to a FormsPlot control.
@@ -101,6 +91,9 @@ public class ChartInteractions : IChartInteractions
         // Clear any preview
         ClearPreview();
 
+        // Clear shape info when changing modes
+        UpdateShapeInfo(null);
+
         // Disable pan/zoom when in drawing mode
         if (mode != ChartDrawMode.None && _formsPlot != null)
         {
@@ -110,6 +103,9 @@ public class ChartInteractions : IChartInteractions
         {
             _formsPlot.UserInputProcessor.IsEnabled = true;
         }
+
+        // Fire mode changed event
+        DrawModeChanged?.Invoke(this, mode);
     }
 
     /// <summary>
@@ -183,15 +179,18 @@ public class ChartInteractions : IChartInteractions
 
     private void OnMouseMove(object? sender, MouseEventArgs e)
     {
-        if (_formsPlot == null || _currentDrawMode == ChartDrawMode.None)
+        if (_formsPlot == null)
+            return;
+
+        // Always update mouse coordinates
+        var currentCoordinates = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
+        UpdateMouseCoordinates(currentCoordinates);
+
+        if (_currentDrawMode == ChartDrawMode.None)
             return;
 
         if (_drawStartCoordinates == null)
             return;
-
-        // Get current mouse coordinates with snap applied
-        var currentCoordinates = _formsPlot.Plot.GetCoordinates(e.X, e.Y);
-        currentCoordinates = ApplySnap(currentCoordinates);
 
         // Update preview
         UpdatePreview(_drawStartCoordinates.Value, currentCoordinates);
@@ -222,132 +221,37 @@ public class ChartInteractions : IChartInteractions
 
     #endregion
 
-    #region Snap Logic
+    #region Status Updates
 
-    /// <summary>
-    /// Applies snap logic to the given coordinates based on snap mode and Shift key state.
-    /// </summary>
-    private Coordinates ApplySnap(Coordinates coords)
+    private void UpdateMouseCoordinates(Coordinates coordinates)
     {
-        // Check if snap is enabled (either via property or Shift key)
-        bool shouldSnap = _snapEnabled || _shiftKeyPressed;
-        
-        if (!shouldSnap || _snapMode == SnapMode.None)
-            return coords;
+        _currentMouseCoordinates = coordinates;
+        MouseCoordinatesChanged?.Invoke(this, coordinates);
+    }
 
-        return _snapMode switch
+    private void UpdateShapeInfo(string? info)
+    {
+        _currentShapeInfo = info;
+        ShapeInfoChanged?.Invoke(this, info ?? string.Empty);
+    }
+
+    private string CalculateShapeInfo(Coordinates start, Coordinates end)
+    {
+        var deltaX = end.X - start.X;
+        var deltaY = end.Y - start.Y;
+        var distance = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+        var angle = Math.Atan2(deltaY, deltaX) * 180.0 / Math.PI;
+
+        return _currentDrawMode switch
         {
-            SnapMode.Price => SnapToPrice(coords),
-            SnapMode.CandleOHLC => SnapToCandleOHLC(coords),
-            _ => coords
+            ChartDrawMode.TrendLine => $"Length: {distance:F2}, Angle: {angle:F1}°",
+            ChartDrawMode.HorizontalLine => $"Price: {end.Y:F2}",
+            ChartDrawMode.VerticalLine => $"Time: {end.X:F2}",
+            ChartDrawMode.Rectangle => $"Width: {Math.Abs(deltaX):F2}, Height: {Math.Abs(deltaY):F2}",
+            ChartDrawMode.Circle => $"RadiusX: {Math.Abs(deltaX) / 2:F2}, RadiusY: {Math.Abs(deltaY) / 2:F2}",
+            ChartDrawMode.FibonacciRetracement => $"Range: {Math.Abs(deltaY):F2}",
+            _ => string.Empty
         };
-    }
-
-    /// <summary>
-    /// Snaps coordinates to rounded price levels.
-    /// </summary>
-    private Coordinates SnapToPrice(Coordinates coords)
-    {
-        if (_formsPlot == null)
-            return coords;
-
-        // Get the current price range visible on the chart
-        var yAxis = _formsPlot.Plot.Axes.Left;
-        var yRange = yAxis.Max - yAxis.Min;
-
-        // Determine appropriate grid spacing based on visible range
-        double gridSize = CalculatePriceGridSize(yRange);
-
-        // Snap Y coordinate to nearest grid line
-        double snappedY = Math.Round(coords.Y / gridSize) * gridSize;
-
-        // For time axis, snap to visible candle positions if available
-        double snappedX = coords.X;
-        if (_boundCandles != null && _boundCandles.Count > 0)
-        {
-            // Create metadata for this shape
-            var metadata = CreateShapeMetadata(_currentDrawMode, start, end);
-            
-            // Track the shape
-            _drawnShapes.Add((plottable, metadata));
-            
-            _formsPlot.Plot.Add.Plottable(plottable);
-            _formsPlot.Refresh();
-        }
-
-        return new Coordinates(snappedX, snappedY);
-    }
-
-    /// <summary>
-    /// Calculates appropriate price grid size based on visible range.
-    /// </summary>
-    private double CalculatePriceGridSize(double range)
-    {
-        // Use logarithmic scale for grid sizing
-        double magnitude = Math.Pow(10, Math.Floor(Math.Log10(range)));
-        double normalized = range / magnitude;
-
-        if (normalized < 2)
-            return magnitude * 0.2;
-        else if (normalized < 5)
-            return magnitude * 0.5;
-        else
-            return magnitude;
-    }
-
-    /// <summary>
-    /// Snaps coordinates to the nearest candle's OHLC values.
-    /// </summary>
-    private Coordinates SnapToCandleOHLC(Coordinates coords)
-    {
-        if (_boundCandles == null || _boundCandles.Count == 0)
-            return coords;
-
-        // Find the nearest candle by time (X coordinate)
-        var nearestCandle = FindNearestCandle(coords.X);
-        if (nearestCandle == null)
-            return coords;
-
-        // Find the closest OHLC value to the Y coordinate
-        double[] ohlcValues = new[] 
-        { 
-            nearestCandle.Value.Open, 
-            nearestCandle.Value.High, 
-            nearestCandle.Value.Low, 
-            nearestCandle.Value.Close 
-        };
-
-        double closestPrice = ohlcValues
-            .OrderBy(price => Math.Abs(price - coords.Y))
-            .First();
-
-        double snappedX = nearestCandle.Value.DateTime.ToOADate();
-
-        return new Coordinates(snappedX, closestPrice);
-    }
-
-    /// <summary>
-    /// Finds the nearest candle to the given X coordinate (time).
-    /// </summary>
-    private OHLC? FindNearestCandle(double x)
-    {
-        if (_boundCandles == null || _boundCandles.Count == 0)
-            return null;
-
-        var targetTime = DateTime.FromOADate(x);
-        
-        return _boundCandles
-            .OrderBy(candle => Math.Abs((candle.DateTime - targetTime).TotalSeconds))
-            .FirstOrDefault();
-    }
-
-    /// <summary>
-    /// Snaps X coordinate to the nearest candle time.
-    /// </summary>
-    private double SnapToNearestCandleTime(double x)
-    {
-        var nearestCandle = FindNearestCandle(x);
-        return nearestCandle?.DateTime.ToOADate() ?? x;
     }
 
     #endregion
@@ -362,9 +266,24 @@ public class ChartInteractions : IChartInteractions
         // Clear previous preview
         ClearPreview();
 
-        // Use strategy pattern to create preview
-        var strategy = DrawModeStrategyFactory.CreateStrategy(_currentDrawMode);
-        if (strategy != null)
+        // Calculate and update shape info
+        var shapeInfo = CalculateShapeInfo(start, end);
+        UpdateShapeInfo(shapeInfo);
+
+        // Create preview based on draw mode
+        _previewPlottable = _currentDrawMode switch
+        {
+            ChartDrawMode.TrendLine => CreateTrendLinePreview(start, end),
+            ChartDrawMode.HorizontalLine => CreateHorizontalLinePreview(start, end),
+            ChartDrawMode.VerticalLine => CreateVerticalLinePreview(start, end),
+            ChartDrawMode.Rectangle => CreateRectanglePreview(start, end),
+            ChartDrawMode.Circle => CreateCirclePreview(start, end),
+            ChartDrawMode.FibonacciRetracement => CreateFibonacciPreview(start, end),
+            // TODO: Implement other draw modes (FibonacciExtension, Channel, Triangle, Text)
+            _ => null
+        };
+
+        if (_previewPlottable != null)
         {
             _previewPlottable = strategy.CreatePreview(start, end, _formsPlot.Plot);
             _formsPlot.Plot.Add.Plottable(_previewPlottable);

@@ -168,14 +168,19 @@ The ChartPro application features a clean, professional interface designed for t
 
 ## Keyboard Shortcuts
 
-**Implemented**:
-- `Shift` (hold) - Temporarily enable snap/magnet while drawing
+**Implemented Shortcuts**:
+- `Esc` - Cancel drawing, return to None mode (pan/zoom enabled)
+- `1` - Select Trend Line tool
+- `2` - Select Horizontal Line tool
+- `3` - Select Vertical Line tool
+- `4` - Select Rectangle tool
+- `5` - Select Circle tool
+- `6` - Select Fibonacci Retracement tool
 
-**Not yet implemented**:
-- `Esc` - Cancel drawing, return to None mode
+**Planned for Future**:
 - `Delete` - Remove selected shape
 - `Ctrl+Z` - Undo last shape
-- `1-6` - Quick select drawing tools
+- `Ctrl+Y` - Redo last undone shape
 
 ## Real-Time Updates
 
@@ -202,14 +207,16 @@ _chartInteractions.AddCandle(newCandle);
 **Current State**:
 - Standard Windows Forms controls (accessible by default)
 - Keyboard navigation between toolbar buttons (Tab key)
-- Shift key for temporary snap enable
-- ToolTips could be added for better UX
+- ToolTips on all toolbar buttons with descriptions
+- Keyboard shortcuts for all drawing tools (1-6, ESC)
+- Status bar showing current mode, coordinates, and shape info
 
-**Improvements Possible**:
-- Add ToolTips to buttons
-- Add more keyboard shortcuts
-- Add status bar showing current mode and snap state
-- Add coordinate display on mouse hover
+**Features**:
+- ToolTips on all buttons explain their function
+- Keyboard shortcuts displayed in button text
+- Status bar provides real-time feedback during drawing
+- Coordinate display updates on mouse move
+- Shape parameters (length, angle, size) shown during drawing
 
 ## Performance
 
@@ -224,14 +231,33 @@ _chartInteractions.AddCandle(newCandle);
 - Event handlers properly managed
 - No memory leaks (IDisposable pattern)
 
+## Components
+
+### 3. Status Bar (Bottom)
+
+**Type**: StatusStrip  
+**Docked**: Bottom
+
+**Labels**:
+1. **Mode Label** - Shows current drawing mode (e.g., "Mode: Trend Line")
+2. **Coordinates Label** - Shows mouse position (e.g., "X: 123.45, Y: 67.89")
+3. **Shape Info Label** - Shows shape parameters during drawing:
+   - Trend Line: Length and angle
+   - Horizontal Line: Price level
+   - Vertical Line: Time position
+   - Rectangle: Width and height
+   - Circle: Radius X and Y
+   - Fibonacci: Range
+
+**Updates**:
+- Mode label updates when drawing tool changes
+- Coordinates update in real-time on mouse move
+- Shape info appears only during drawing preview
+
 ## Future Enhancements
 
 Planned UI improvements:
-1. Status bar showing:
-   - Current draw mode
-   - Mouse coordinates
-   - Number of shapes drawn
-2. Context menu for shape management:
+1. Context menu for shape management:
    - Delete shape
    - Edit properties
    - Change color

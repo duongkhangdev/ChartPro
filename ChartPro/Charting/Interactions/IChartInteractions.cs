@@ -61,14 +61,27 @@ public interface IChartInteractions : IDisposable
     bool IsAttached { get; }
 
     /// <summary>
-    /// Saves all drawn shapes to a JSON file.
+    /// Gets the current mouse coordinates.
     /// </summary>
-    /// <param name="filePath">The path to save the JSON file</param>
-    void SaveShapesToFile(string filePath);
+    Coordinates? CurrentMouseCoordinates { get; }
 
     /// <summary>
-    /// Loads shapes from a JSON file and adds them to the chart.
+    /// Gets the current shape info (length, angle, size).
     /// </summary>
-    /// <param name="filePath">The path to the JSON file to load</param>
-    void LoadShapesFromFile(string filePath);
+    string? CurrentShapeInfo { get; }
+
+    /// <summary>
+    /// Event fired when the drawing mode changes.
+    /// </summary>
+    event EventHandler<ChartDrawMode>? DrawModeChanged;
+
+    /// <summary>
+    /// Event fired when mouse coordinates change.
+    /// </summary>
+    event EventHandler<Coordinates>? MouseCoordinatesChanged;
+
+    /// <summary>
+    /// Event fired when shape info changes.
+    /// </summary>
+    event EventHandler<string>? ShapeInfoChanged;
 }
