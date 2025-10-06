@@ -25,13 +25,30 @@ This document describes the implementation of the DI-based ChartInteractions ser
 - HorizontalLine
 - VerticalLine
 - Rectangle
+- Circle
 - FibonacciRetracement
 - Additional modes defined for future implementation
+
+✅ **Strategy Pattern Architecture**
+- Created `IDrawModeStrategy` interface for extensible draw modes
+- Implemented individual strategy classes for each draw mode
+- Created `DrawModeStrategyFactory` for strategy instantiation
+- Refactored `ChartInteractions` to use strategies instead of switch-case
+- Added comprehensive unit tests for all strategies
+- See [STRATEGY_PATTERN.md](STRATEGY_PATTERN.md) for detailed documentation
 
 ✅ **Memory Safety**
 - Event handlers properly hooked in `Attach()`
 - Event handlers safely unhooked in `Dispose()`
 - Prevents memory leaks
+
+✅ **Snap/Magnet Feature**
+- `SnapEnabled` property for toggling snap functionality
+- `SnapMode` property for selecting snap mode (None, Price, CandleOHLC)
+- Keyboard support via Shift key
+- Dynamic price grid calculation
+- Candle OHLC snapping
+- Integrated into all drawing tools
 
 ✅ **Functionality Preservation**
 - All drawing features work as expected
@@ -131,6 +148,15 @@ Implemented:
 Each tool has:
 - Preview method (gray, semi-transparent)
 - Final method (colored, solid)
+
+### 4. Snap/Magnet Feature
+
+The snap functionality improves drawing accuracy:
+- **Snap Modes**: None, Price Grid, Candle OHLC
+- **Enable Methods**: UI checkbox or Shift key
+- **Price Snapping**: Dynamic grid sizing based on visible range
+- **Candle Snapping**: Snaps to nearest candle's OHLC values
+- **Integration**: Applied in all mouse event handlers
 
 ### 4. Real-Time Support
 

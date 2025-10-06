@@ -1,5 +1,7 @@
+using ChartPro.Charting.Shapes;
 using ScottPlot;
 using ScottPlot.WinForms;
+using ChartPro.Charting.ShapeManagement;
 
 namespace ChartPro.Charting.Interactions;
 
@@ -59,4 +61,9 @@ public interface IChartInteractions : IDisposable
     /// Gets whether the service is attached to a chart.
     /// </summary>
     bool IsAttached { get; }
+
+    /// <summary>
+    /// Gets the shape manager instance.
+    /// </summary>
+    IShapeManager ShapeManager { get; }
 }

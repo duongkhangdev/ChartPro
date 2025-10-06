@@ -94,7 +94,11 @@ _chartInteractions.AddCandle(newCandle);
 
 ## Extending the Service
 
-### Adding New Drawing Tools
+### Adding New Drawing Tools (Using Strategy Pattern)
+
+The ChartPro project uses the **Strategy Pattern** for drawing modes. This makes adding new draw modes straightforward and maintainable. For detailed architecture information, see [STRATEGY_PATTERN.md](STRATEGY_PATTERN.md).
+
+#### Quick Steps:
 
 1. **Add to ChartDrawMode enum** (ChartDrawMode.cs)
 ```csharp
@@ -105,53 +109,83 @@ public enum ChartDrawMode
 }
 ```
 
-2. **Implement in ChartInteractions** (ChartInteractions.cs)
-
-Add preview method:
+2. **Create Strategy Class** (ChartPro/Charting/Interactions/Strategies/MyNewToolStrategy.cs)
 ```csharp
-private IPlottable CreateMyNewToolPreview(Coordinates start, Coordinates end)
+using ScottPlot;
+
+namespace ChartPro.Charting.Interactions.Strategies;
+
+public class MyNewToolStrategy : IDrawModeStrategy
 {
-    // Create preview with gray, semi-transparent style
-    var tool = _formsPlot!.Plot.Add.MyNewTool(start, end);
-    tool.LineWidth = 1;
-    tool.LineColor = Colors.Gray.WithAlpha(0.5);
-    return tool;
+    public IPlottable CreatePreview(Coordinates start, Coordinates end, Plot plot)
+    {
+        // Create preview with gray, semi-transparent style
+        var tool = plot.Add.MyNewTool(start, end);
+        tool.LineWidth = 1;
+        tool.LineColor = Colors.Gray.WithAlpha(0.5);
+        return tool;
+    }
+
+    public IPlottable CreateFinal(Coordinates start, Coordinates end, Plot plot)
+    {
+        // Create final with colored, solid style
+        var tool = plot.Add.MyNewTool(start, end);
+        tool.LineWidth = 2;
+        tool.LineColor = Colors.Blue;
+        return tool;
+    }
 }
 ```
 
-Add final method:
+3. **Update Factory** (DrawModeStrategyFactory.cs)
 ```csharp
-private IPlottable CreateMyNewTool(Coordinates start, Coordinates end)
+public static IDrawModeStrategy? CreateStrategy(ChartDrawMode mode)
 {
-    // Create final with colored, solid style
-    var tool = _formsPlot!.Plot.Add.MyNewTool(start, end);
-    tool.LineWidth = 2;
-    tool.LineColor = Colors.Blue;
-    return tool;
+    return mode switch
+    {
+        // ... existing cases
+        ChartDrawMode.MyNewTool => new MyNewToolStrategy(),
+        _ => null
+    };
 }
 ```
 
-Update UpdatePreview method:
+4. **Add Unit Tests** (ChartPro.Tests/Strategies/MyNewToolStrategyTests.cs)
 ```csharp
-_previewPlottable = _currentDrawMode switch
+public class MyNewToolStrategyTests
 {
-    // ... existing cases
-    ChartDrawMode.MyNewTool => CreateMyNewToolPreview(start, end),
-    _ => null
-};
+    private readonly MyNewToolStrategy _strategy;
+    private readonly Plot _plot;
+
+    public MyNewToolStrategyTests()
+    {
+        _strategy = new MyNewToolStrategy();
+        _plot = new Plot();
+    }
+
+    [Fact]
+    public void CreatePreview_ShouldReturnNotNull()
+    {
+        var result = _strategy.CreatePreview(
+            new Coordinates(10, 20), 
+            new Coordinates(30, 40), 
+            _plot);
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void CreateFinal_ShouldReturnNotNull()
+    {
+        var result = _strategy.CreateFinal(
+            new Coordinates(10, 20), 
+            new Coordinates(30, 40), 
+            _plot);
+        Assert.NotNull(result);
+    }
+}
 ```
 
-Update FinalizeShape method:
-```csharp
-IPlottable? plottable = _currentDrawMode switch
-{
-    // ... existing cases
-    ChartDrawMode.MyNewTool => CreateMyNewTool(start, end),
-    _ => null
-};
-```
-
-3. **Add UI Button** (MainForm.cs)
+5. **Add UI Button** (MainForm.cs)
 ```csharp
 var btnMyNewTool = CreateToolButton("My New Tool", ChartDrawMode.MyNewTool, ref yPos);
 toolbarPanel.Controls.Add(btnMyNewTool);
@@ -235,6 +269,31 @@ public interface IChartInteractions : IDisposable
     event EventHandler<DrawModeChangedEventArgs>? DrawModeChanged;
 }
 ```
+
+### Working with Snap/Magnet
+
+The snap feature helps users draw more accurately by snapping coordinates to predefined points:
+
+```csharp
+// Enable snap functionality
+_chartInteractions.SnapEnabled = true;
+
+// Set snap mode
+_chartInteractions.SnapMode = SnapMode.Price; // or SnapMode.CandleOHLC
+
+// Snap can also be temporarily enabled by holding Shift key
+```
+
+**Snap Modes**:
+- `SnapMode.None` - No snapping (default)
+- `SnapMode.Price` - Snaps to rounded price levels with dynamic grid sizing
+- `SnapMode.CandleOHLC` - Snaps to nearest candle's Open, High, Low, or Close values
+
+**Implementation Details**:
+- Snap logic is applied in mouse event handlers before creating shapes
+- Price grid size is dynamically calculated based on visible range
+- Candle snapping finds the nearest candle by time, then the closest OHLC value
+- Shift key state is tracked via KeyDown/KeyUp events
 
 ## Architecture Patterns
 
