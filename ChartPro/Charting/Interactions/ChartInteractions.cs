@@ -25,7 +25,6 @@ public class ChartInteractions : IChartInteractions, IDisposable
     private List<OHLC>? _boundCandles;
     private bool _isAttached;
     private bool _disposed;
-    private bool _shiftKeyPressed;
     private bool _snapEnabled;
     private SnapMode _snapMode = SnapMode.None;
 
@@ -145,14 +144,12 @@ public class ChartInteractions : IChartInteractions, IDisposable
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode == Keys.ShiftKey)
-            _shiftKeyPressed = true;
+        // Reserved for future keyboard shortcuts
     }
 
     private void OnKeyUp(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode == Keys.ShiftKey)
-            _shiftKeyPressed = false;
+        // Reserved for future keyboard shortcuts
     }
 
     private void OnMouseDown(object? sender, MouseEventArgs e)
