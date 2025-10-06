@@ -425,7 +425,10 @@ public class ChartInteractions : IChartInteractions, IDisposable
         if (plottable != null)
         {
             _formsPlot.Plot.Add.Plottable(plottable);
-            _shapeManager.AddShape(plottable);
+            
+            // Create DrawnShape with metadata
+            var drawnShape = new Charting.Shapes.DrawnShape(plottable, _currentDrawMode);
+            _shapeManager.AddShape(drawnShape);
 
             var metadata = CreateShapeMetadata(_currentDrawMode, start, end);
             _drawnShapes.Add((plottable, metadata));
@@ -542,9 +545,25 @@ public class ChartInteractions : IChartInteractions, IDisposable
 
     private void HandleShapeSelection(int pixelX, int pixelY, Keys modifiers)
     {
-        // TODO: Implement shape selection functionality
-        // This requires extending IPlottable or wrapping shapes with metadata
-        // For now, shape selection is not implemented
+        if (_formsPlot == null)
+            return;
+
+        // Check if Ctrl key is pressed to add to selection
+        var addToSelection = (modifiers & Keys.Control) == Keys.Control;
+
+        // Try to select a shape at the clicked location
+        var selectedShape = _shapeManager.SelectShapeAt(pixelX, pixelY, addToSelection);
+
+        if (selectedShape != null)
+        {
+            // Shape was selected, update UI if needed
+            _formsPlot.Refresh();
+        }
+        else if (!addToSelection)
+        {
+            // No shape found and not adding to selection, clear selection
+            _shapeManager.ClearSelection();
+        }
     }
 
     #endregion
@@ -573,7 +592,7 @@ public class ChartInteractions : IChartInteractions, IDisposable
 
     public void DeleteSelectedShapes()
     {
-        // Optional: implement delete behavior via shape manager if supported
+        _shapeManager.DeleteSelectedShapes();
         _formsPlot?.Refresh();
     }
 

@@ -1,5 +1,6 @@
 using ScottPlot;
 using ScottPlot.WinForms;
+using ChartPro.Charting.Shapes;
 
 namespace ChartPro.Charting.ShapeManagement;
 
@@ -17,14 +18,14 @@ public interface IShapeManager : IDisposable
     /// <summary>
     /// Adds a shape to the chart.
     /// </summary>
-    /// <param name="shape">The shape to add</param>
-    void AddShape(IPlottable shape);
+    /// <param name="shape">The DrawnShape to add</param>
+    void AddShape(DrawnShape shape);
 
     /// <summary>
     /// Deletes a shape from the chart.
     /// </summary>
-    /// <param name="shape">The shape to delete</param>
-    void DeleteShape(IPlottable shape);
+    /// <param name="shape">The DrawnShape to delete</param>
+    void DeleteShape(DrawnShape shape);
 
     /// <summary>
     /// Undoes the last command.
@@ -41,7 +42,7 @@ public interface IShapeManager : IDisposable
     /// <summary>
     /// Gets all shapes currently managed.
     /// </summary>
-    IReadOnlyList<IPlottable> Shapes { get; }
+    IReadOnlyList<DrawnShape> Shapes { get; }
 
     /// <summary>
     /// Gets whether there are commands that can be undone.
@@ -57,4 +58,34 @@ public interface IShapeManager : IDisposable
     /// Gets whether the manager is attached to a chart.
     /// </summary>
     bool IsAttached { get; }
+
+    /// <summary>
+    /// Selects a shape at the given pixel coordinates.
+    /// </summary>
+    /// <param name="pixelX">The X pixel coordinate</param>
+    /// <param name="pixelY">The Y pixel coordinate</param>
+    /// <param name="addToSelection">If true, adds to existing selection; if false, replaces selection</param>
+    /// <returns>The selected shape, or null if no shape was found</returns>
+    DrawnShape? SelectShapeAt(int pixelX, int pixelY, bool addToSelection = false);
+
+    /// <summary>
+    /// Toggles selection state of a specific shape.
+    /// </summary>
+    /// <param name="shape">The shape to toggle</param>
+    void ToggleSelection(DrawnShape shape);
+
+    /// <summary>
+    /// Clears all selections.
+    /// </summary>
+    void ClearSelection();
+
+    /// <summary>
+    /// Gets all currently selected shapes.
+    /// </summary>
+    IReadOnlyList<DrawnShape> SelectedShapes { get; }
+
+    /// <summary>
+    /// Deletes all selected shapes.
+    /// </summary>
+    void DeleteSelectedShapes();
 }
